@@ -1,0 +1,1 @@
+CREATE DATABASE zot_world;

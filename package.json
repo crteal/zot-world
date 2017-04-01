@@ -1,0 +1,30 @@
+{
+  "name": "zot-world",
+  "version": "1.0.0",
+  "description": "",
+  "main": "target/server/main.js",
+  "dependencies": {
+    "bcrypt": "1.0.2",
+    "body-parser": "1.17.2",
+    "compression": "1.6.2",
+    "cookie-parser": "1.4.3",
+    "csurf": "1.9.0",
+    "dotenv": "4.0.0",
+    "express": "4.15.3",
+    "helmet": "3.6.1",
+    "morgan": "1.8.2",
+    "pg-bricks": "0.5.0",
+    "serve-static": "1.12.3",
+    "source-map-support": "0.4.15",
+    "twilio": "crteal/twilio-node#feature-twiml-surrogate-characters",
+    "ws": "3.0.0"
+  },
+  "engines": {
+    "node": "8.0.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Colin Teal",
+  "license": "ISC"
+}
