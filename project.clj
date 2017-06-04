@@ -24,6 +24,16 @@
                           :output-dir "resources/js/out"
                           :output-to "resources/js/main.js"
                           :source-map true}}
+      :worker {:source-paths ["src/shared"
+                              "src/server"
+                              "src/worker"]
+               :figwheel true
+               :compiler {:infer-externs true
+                          :main zot-world.worker.core
+                          :optimizations :none
+                          :output-dir "target/worker"
+                          :output-to "target/worker/main.js"
+                          :target :nodejs}}
       :server {:source-paths ["src/shared"
                               "src/server"]
                :figwheel true
@@ -42,4 +52,5 @@
         :builds {
           :client {:compiler {:optimizations :advanced
                               :source-map "resources/js/main.js.map"}}
+          :worker {:compiler {:source-map false}}
           :server {:compiler {:source-map false}}}}}})

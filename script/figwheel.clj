@@ -4,7 +4,7 @@
 (defn start []
   (ra/start-figwheel!
     {:figwheel-options {}
-     :build-ids ["server" "client"]
+     :build-ids ["server" "worker" "client"]
      :all-builds
      [{:id "client"
        :figwheel true
@@ -16,6 +16,16 @@
                   :output-dir "resources/js/out"
                   :output-to "resources/js/main.js"
                   :source-map true}}
+      {:id "worker"
+       :figwheel true
+       :source-paths ["src/shared" "src/server" "src/worker"]
+       :compiler {:infer-externs true
+                  :main "zot-world.worker.core"
+                  :optimizations :none
+                  :output-dir "target/worker"
+                  :output-to "target/worker/main.js"
+                  :source-map true
+                  :target :nodejs}}
       {:id "server"
        :figwheel true
        :source-paths ["src/shared" "src/server"]

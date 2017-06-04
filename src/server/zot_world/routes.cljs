@@ -7,7 +7,8 @@
             [clojure.string :as str]
             [zot-world.components :as components]
             [zot-world.server.db :as db]
-            [zot-world.styles :as styles]))
+            [zot-world.styles :as styles]
+            [zot-world.server.queue :as queue]))
 
 (defonce body-parser (nodejs/require "body-parser"))
 (defonce csrf (nodejs/require "csurf"))
@@ -123,7 +124,13 @@
       (.sendStatus res 401)
       (db/create-post
         data
-        #(.twiml res (message-receipt))))))
+        (fn [post]
+          (do
+            (.twiml res (message-receipt))
+            (queue/enqueue
+                {:data post
+                 :queue (.. js/process -env -POST_QUEUE_NAME)
+                 :connection-string (.. js/process -env -RABBITMQ_BIGWIG_TX_URL)})))))))
 
 (defn api-response-handler [res data component]
   (.format res #js {"application/edn" #(.edn res data)
