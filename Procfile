@@ -1,2 +1,2 @@
 web: node target/server/main.js
-worker: node target/server/worker.js
+worker: node target/worker/main.js
