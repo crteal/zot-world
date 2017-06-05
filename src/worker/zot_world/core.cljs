@@ -24,18 +24,29 @@
                  cb))
     stream))
 
-(defn upload-post-media [post-id k url content-type cb]
-  (pipe-url url (upload-stream post-id k content-type cb)))
+(defn upload-post-media [post-id k url content-type]
+  (js/Promise.
+    (fn [res rej]
+      (pipe-url
+        url
+        (upload-stream
+          post-id
+          k
+          content-type
+          (fn [err data]
+            (if-not (nil? err)
+              (rej err)
+              (res data))))))))
 
-(defn upload-post [post cb]
-  (dotimes [n (js/parseInt (get-in post [:data :NumMedia]))]
-    (upload-post-media
-      (:id post)
-      n
-      (get-in post [:data (keyword (str "MediaUrl" n))])
-      (get-in post [:data (keyword (str "MediaContentType" n))])
-      ;; TODO this is flat out wrong
-      #(when (= 0 n) (cb)))))
+(defn upload-post [post]
+  (let [data (:data post)
+        p (map #(upload-post-media
+                  (:id post)
+                  %
+                  (get data (keyword (str "MediaUrl" %)))
+                  (get data (keyword (str "MediaContentType" %))))
+               (range (js/parseInt (:NumMedia data))))]
+    (.all js/Promise (clj->js p))))
 
 (def -main
   (fn []
@@ -44,11 +55,11 @@
        :connection-string (.. js/process -env -RABBITMQ_BIGWIG_RX_URL)
        :handler (fn [chan msg]
                   (when-not (nil? msg)
-                    (upload-post
-                      (reader/read-string
-                        (-> msg
-                            .-content
-                            .toString))
-                      #(.ack chan msg))))})))
+                    (-> (upload-post
+                          (reader/read-string
+                            (-> msg
+                                .-content
+                                .toString)))
+                        (.then #(.ack chan msg)))))})))
 
 (set! *main-cli-fn* -main)
