@@ -16,7 +16,8 @@
 
 (defn upload-stream [post-id k content-type cb]
   (let [stream (PassThrough.)]
-    (-> (s3.)
+    (-> (s3. #js {:accessKeyId (.. js/process -env -AWS_ACCESS_KEY)
+                  :secretAccessKey (.. js/process -env -AWS_SECRET_ACCESS_KEY)})
         (.upload (clj->js {:Body stream
                            :Bucket (.. js/process -env -S3_MEDIA_BUCKET)
                            :ContentType content-type
