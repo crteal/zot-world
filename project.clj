@@ -9,7 +9,7 @@
                  [markdown-clj              "0.9.98"]
                  [org.clojure/clojure       "1.9.0-alpha17"]
                  [org.clojure/clojurescript "1.9.562"]
-                 [org.omcljs/om             "1.0.0-alpha48" :exclusions [cljsjs/react cljsjs/react-dom]]]
+                 [org.omcljs/om             "1.0.0-beta1" :exclusions [cljsjs/react cljsjs/react-dom]]]
   :plugins [[lein-cljsbuild "1.1.5"]]
   :clean-targets ^{:protect false} ["resources/js/out"
                                     "resources/js/main.js"
