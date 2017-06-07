@@ -61,12 +61,13 @@
 
 ; routes
 (defn index [req res]
-  (db/posts #(render!
-               res
-               (components/app-page
-                 (components/data {:posts %
-                                   :user {:id (.-id (.-signedCookies req))}}))
-               {:title "zot.world"})))
+  (db/recent-posts
+    #(render!
+       res
+       (components/app-page
+         (components/data {:posts %
+                           :user {:id (.-id (.-signedCookies req))}}))
+       {:title "zot.world"})))
 
 (defn login-page [req res]
   (render!
@@ -146,6 +147,14 @@
        components/post)))
 
 (defmulti read om/dispatch)
+
+(defmethod read :posts
+  [{:keys [cb user]} key {:keys [until]}]
+  (db/posts-until
+    until
+    (fn [posts]
+      (cb {:posts (into [] (map (fn [post] `[:posts/by-id ~(:id post)]) posts))
+           :posts/by-id (reduce #(assoc % (:id %2) %2) {} posts)}))))
 
 (defmulti mutate om/dispatch)
 

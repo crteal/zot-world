@@ -174,10 +174,10 @@
 (defui Posts
   static om/IQueryParams
   (params [this]
-    {:start 0 :end 5})
+    {:until nil})
   static om/IQuery
   (query [_]
-    `[({:posts ~(om/get-query Post)} ~'{:start ?start :end ?end})])
+    `[({:posts ~(om/get-query Post)} ~'{:until ?until})])
   Object
   (render [this]
     (let [{:keys [posts]} (om/props this)]

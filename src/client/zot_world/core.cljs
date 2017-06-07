@@ -30,11 +30,12 @@
       {:value :not-found})))
 
 (defmethod read :posts
-  [{:keys [state query] :as env} key {:keys [start end]}]
+  [{:keys [state ast] :as env} key {:keys [until]}]
   (let [st @state]
-    {:value (apply subvec
-             (into [] (map #(get-in st %)) (get st key))
-             (filter some? [start end]))}))
+    (merge
+      {:value (into [] (map #(get-in st %)) (get st key))}
+      (when-not (nil? until)
+        {:remote ast}))))
 
 (defmulti mutate om/dispatch)
 
@@ -47,7 +48,12 @@
     {:state app-state
      :merge (fn [reconciler state novelty query]
               {:keys (keys novelty)
-               :next (merge-with merge state novelty)})
+               :next (merge-with (fn [l r]
+                                   (if (vector? l)
+                                     (into l r)
+                                     (merge l r)))
+                                 state
+                                 novelty)})
      :send (fn [{:keys [remote]} cb]
              (xhr/send
                "/query"
@@ -78,21 +84,18 @@
   (goog.functions.debounce
     (fn []
       (let [state (om/app-state reconciler)
+            post (get-in @state (last (:posts @state)))
             root (om/app-root reconciler)
-            item-count (count (:posts @state))
             params (om/get-params root)
             height (.. js/document -body -clientHeight)
             scroll (- (.. js/document -body -scrollHeight)
                       (.. js/document -body -scrollTop))]
-        (when (and (< (:end params) item-count)
-                   (<= (- scroll height) 300))
+        (when (<= (- scroll height) 300)
           (om/update-query!
             root
             (fn [q]
-              (update q :params conj {:end (js/Math.min
-                                             item-count
-                                             (+ (:end params) 5))}))))))
-    50))
+              (update q :params merge {:until (:created_at post)}))))))
+    250))
 
 (defn on-scroll [e]
   (handle-scroll))

@@ -20,13 +20,34 @@
       ; constructors
       (cb (js->clj (to-json rows) :keywordize-keys true)))))
 
-(defn posts
-  ([cb] (posts sql cb))
-  ([client cb]
+(defn posts-query
+  ([f] (posts-query f))
+  ([client f]
    (-> client
        .select
        (.from "posts_view")
-       (.rows (row-handler cb)))))
+       f)))
+
+(defn recent-posts
+  ([cb] (recent-posts sql cb))
+  ([client cb]
+   (posts-query
+     client
+     #(-> %
+          (.limit 5)
+          (.rows (row-handler cb))))))
+
+(defn posts-until
+  ([until cb] (posts-until sql until cb))
+  ([client until cb]
+   (posts-query
+     client
+     #(-> %
+          (.where (-> sql
+                      .-sql
+                      (.lt "created_at" until)))
+          (.limit 5)
+          (.rows (row-handler cb))))))
 
 (defn post
   ([query cb] (post sql query cb))
