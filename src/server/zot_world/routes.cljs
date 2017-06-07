@@ -153,8 +153,16 @@
   (db/posts-until
     until
     (fn [posts]
-      (cb {:posts (into [] (map (fn [post] `[:posts/by-id ~(:id post)]) posts))
-           :posts/by-id (reduce #(assoc % (:id %2) %2) {} posts)}))))
+      (cb (reduce
+            #(merge-with (fn [l r]
+                           (if (vector? l)
+                             (into l r)
+                             (merge l r)))
+                         %
+                         {:posts [`[:posts/by-id ~(:id %2)]]
+                          :posts/by-id (assoc {} (:id %2) %2)})
+            {}
+            posts)))))
 
 (defmulti mutate om/dispatch)
 
