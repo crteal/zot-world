@@ -10,10 +10,6 @@
 
 (enable-console-print!)
 
-(extend-type js/NodeList
-  ISeqable
-  (-seq [array] (array-seq array 0)))
-
 (def app-state
   (-> js/document
       (.querySelector "script[type='application/edn']")
