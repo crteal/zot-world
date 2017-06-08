@@ -92,6 +92,6 @@
             root
             (fn [q]
               (update q :params merge {:until (:created_at post)}))))))
-    200))
+    25))
 
 (add-listener "scroll" #(handle-scroll))
