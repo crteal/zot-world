@@ -86,14 +86,12 @@
             height (.. js/document -body -clientHeight)
             scroll (- (.. js/document -body -scrollHeight)
                       (.. js/document -body -scrollTop))]
-        (when (<= (- scroll height) 300)
+        (when (and (not= (:until params) (:created_at post))
+                   (<= (/ (- scroll height) height) 2))
           (om/update-query!
             root
             (fn [q]
               (update q :params merge {:until (:created_at post)}))))))
-    250))
+    200))
 
-(defn on-scroll [e]
-  (handle-scroll))
-
-(add-listener "scroll" on-scroll)
+(add-listener "scroll" #(handle-scroll))
