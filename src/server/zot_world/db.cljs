@@ -4,13 +4,16 @@
 
 (defonce bcrypt (nodejs/require "bcrypt"))
 (defonce sql (.configure (nodejs/require "pg-bricks")
-                         (.-DATABASE_URL (.-env js/process))))
+                         (.. js/process -env -DATABASE_URL)))
 
 (defn to-json [obj]
   (.parse js/JSON (.stringify js/JSON obj)))
 
 (defn str-sql [line & lines]
   (reduce #(str % "\n" %2) line lines))
+
+(defn tx [f cb]
+  (.transaction sql f cb))
 
 (defn row-handler [cb]
   (fn [error rows]
@@ -49,14 +52,24 @@
           (.limit 5)
           (.rows (row-handler cb))))))
 
+(defn table-query
+  ([table query cb] (table-query sql table query cb))
+  ([client table query cb]
+   (-> client
+       .select
+       (.from table)
+       (.where (clj->js query))
+       (.rows (row-handler cb)))))
+
+(defn site
+  ([query cb] (site sql query cb))
+  ([client query cb]
+   (table-query client "sites" query #(cb (first %)))))
+
 (defn post
   ([query cb] (post sql query cb))
   ([client query cb]
-   (-> client
-       .select
-       (.from "posts_view")
-       (.where (clj->js query))
-       (.rows (row-handler #(cb (first %)))))))
+   (table-query client "posts_view" query #(cb (first %)))))
 
 (defn now-timestamp []
   (-> js/moment
@@ -65,11 +78,43 @@
       .toISOString))
 
 (defn create-post [data cb]
-  (-> sql
-      (.insert "posts" #js {:data data
-                            :created_at (now-timestamp)})
-          (.returning "*")
-          (.row (row-handler cb))))
+  (tx
+    (fn [client cb]
+      (-> client
+          (.raw (str-sql
+                  "SELECT"
+                    "mv.user_id,"
+                    "mv.user_phone_number,"
+                    "mv.site_id"
+                  "FROM members_view mv"
+                  "JOIN sites_view sv"
+                  "ON mv.site_id = sv.id"
+                  "AND sv.phone_number = $1"
+                  "WHERE mv.permission IN ('admin', 'write')"
+                  "AND mv.user_phone_number = $2"
+                  "UNION"
+                  "SELECT"
+                    "sv.owner_id AS user_id,"
+                    "sv.owner_phone_number AS user_phone_number,"
+                    "sv.id AS site_id"
+                  "FROM sites_view sv"
+                  "WHERE sv.phone_number = $1"
+                  "AND sv.owner_phone_number = $2;")
+                #js [(.-To data) (.-From data)])
+          (.rows (fn [err [author]]
+                   (if (or (some? err)
+                           (nil? author))
+                     (cb (if (some? err)
+                           err
+                           "insufficient privileges"))
+                     (-> client
+                        (.insert "posts" #js {:data data
+                                              :author_id (.-user_id author)
+                                              :site_id (.-site_id author)
+                                              :created_at (now-timestamp)})
+                        (.returning "*")
+                        (.row (row-handler #(cb nil %)))))))))
+    cb))
 
 (defn create-comment
   ([data cb]
@@ -128,30 +173,28 @@
        (.run cb))))
 
 (defn toggle-post-engagement [post-id user-id cb]
-  (.transaction sql
-    (fn [client callback]
-      (update-post-likes
-        client
-        post-id
-        user-id
-        (fn []
-          (post
-            client
-            {:id post-id}
-            #(callback nil %)))))
-    cb))
+  (tx (fn [client callback]
+        (update-post-likes
+          client
+          post-id
+          user-id
+          (fn []
+            (post
+              client
+              {:id post-id}
+              #(callback nil %)))))
+      cb))
 
 (defn add-post-comment [post-id user-id body cb]
-  (.transaction sql
-    (fn [client callback]
-      (create-comment
-        client
-        {:author_id user-id
-         :post_id post-id
-         :body body}
-        (fn [_]
-          (post
-            client
-            {:id post-id}
-            #(callback nil %)))))
-    cb))
+  (tx (fn [client callback]
+        (create-comment
+          client
+          {:author_id user-id
+           :post_id post-id
+           :body body}
+          (fn [_]
+            (post
+              client
+              {:id post-id}
+              #(callback nil %)))))
+      cb))

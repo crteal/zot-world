@@ -61,25 +61,42 @@
 
 ; routes
 (defn index [req res]
-  (db/recent-posts
-    #(render!
-       res
-       (components/app-page
-         (components/data {:posts %
-                           :user {:id (.-id (.-signedCookies req))}}))
-       {:title "zot.world"})))
+  (db/tx
+    (fn [client cb]
+      (db/site
+        client
+        {:slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)}
+        (fn [site]
+          (db/recent-posts
+            client
+            #(cb nil (merge {:site site} {:posts %}))))))
+    (fn [err {:keys [site posts]}]
+      (render!
+        res
+        (components/app-page
+          (components/data {:posts posts
+                            :site (select-keys site [:id])
+                            :user {:id (.-id (.-signedCookies req))}}))
+        {:title (:title site)}))))
 
 (defn login-page [req res]
-  (render!
-    res
-    (components/page
-      {:body (dom/section nil
-               (dom/h1 #js {:className "f1 f-6-ns lh-solid measure center tc"}
-                       "zot.world")
-               (components/login {:action "/login"
-                                  :csrf-token (.csrfToken req)
-                                  :method "post"}))})
-    {:title "zot.world"}))
+  (db/tx
+    (fn [client cb]
+      (db/site
+        client
+        {:slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)}
+        #(cb nil %)))
+    (fn [err {:keys [title]}]
+      (render!
+        res
+        (components/page
+          {:body (dom/section nil
+                   (dom/h1 #js {:className "f1 f-6-ns lh-solid measure center tc"}
+                     title)
+                   (components/login {:action "/login"
+                                      :csrf-token (.csrfToken req)
+                                      :method "post"}))})
+        {:title title}))))
 
 (defn login [req res]
   (let [data      (.-body req)
@@ -116,22 +133,17 @@
       (rand-nth ["👍" "👌"]))))
 
 (defn create-post [req res]
-  (let [data          (.-body req)
-        valid-numbers (reduce conj
-                              #{}
-                              (str/split (.-ZOT_WORLD_USER_NUMBERS (.-env js/process))
-                                         ","))]
-    (if-not (contains? valid-numbers (.-From data))
-      (.sendStatus res 401)
-      (db/create-post
-        data
-        (fn [post]
-          (do
-            (.twiml res (message-receipt))
-            (queue/enqueue
-                {:data post
-                 :queue (.. js/process -env -POST_QUEUE_NAME)
-                 :connection-string (.. js/process -env -RABBITMQ_BIGWIG_TX_URL)})))))))
+  (db/create-post
+    (.-body req)
+    (fn [err post]
+      (if (some? err)
+        (.sendStatus res 401)
+        (do
+          (.twiml res (message-receipt))
+          (queue/enqueue
+            {:data post
+             :queue (.. js/process -env -POST_QUEUE_NAME)
+             :connection-string (.. js/process -env -RABBITMQ_BIGWIG_TX_URL)}))))))
 
 (defn api-response-handler [res data component]
   (.format res #js {"application/edn" #(.edn res data)
