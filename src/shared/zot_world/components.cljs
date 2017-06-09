@@ -124,7 +124,8 @@
       (dom/article #js {:className "center-ns mw6-ns hidden mv4 mh3 ba b--near-white"
                         :name "post"}
         (when (> num-media 0)
-          (map #(dom/img #js {:className "db mv0"
+          (map #(dom/img #js {:key %
+                              :className "db mv0 w-100"
                               :src (get data (keyword (str "MediaUrl" %)))})
                (range num-media)))
         (when-not (empty? (:Body data))
