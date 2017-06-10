@@ -7,11 +7,10 @@
             [clojure.string :as str]
             [zot-world.components :as components]
             [zot-world.server.db :as db]
+            [zot-world.server.middleware :as middleware]
             [zot-world.styles :as styles]
             [zot-world.server.queue :as queue]))
 
-(defonce body-parser (nodejs/require "body-parser"))
-(defonce csrf (nodejs/require "csurf"))
 (defonce express (nodejs/require "express"))
 (defonce twilio (nodejs/require "twilio"))
 
@@ -19,41 +18,25 @@
   (= (.. js/process -env -NODE_ENV)
      "production"))
 
-; middleware
-(defonce csrf-middleware (csrf #js {:cookie true}))
-(defonce form-parser-middleware (.urlencoded body-parser #js {:extended false}))
-(defonce edn-parser-middleware (.raw body-parser #js {:type "application/edn"}))
-(defonce twilio-middleware (.webhook twilio #js {:includeHelpers false
-                                                 :validate (production?)}))
+(defonce serializers {:css {:headers {:Content-Type "text/css"}}
+                      :edn {:headers {:Content-Type "application/edn"}
+                            :serializer #(binding [*print-namespace-maps* false]
+                                           (pr-str %))}
+                      :twiml {:headers {:Content-Type "text/xml"}
+                              :serializer #(.toString %)}})
 
-(defn restrict [req res nxt]
-  (if-not (nil? (.-id (.-signedCookies req)))
-    (nxt)
-    (.redirect res "/login")))
+(defn make-send [serializer-configurations]
+  (fn [res content-type data]
+    (let [config (get serializer-configurations content-type)
+          serializer (if-some [f (:serializer config)]
+                       f
+                       identity)]
+      (-> res
+          (cond->
+            (contains? config :headers) (.set (clj->js (:headers config))))
+          (.send (serializer data))))))
 
-(defn make-type-helper [n content-type f]
-  (fn [req res nxt]
-    (aset res n (fn [obj]
-                  (-> res
-                      (.set "Content-Type" content-type)
-                      (.send (f obj)))))
-    (nxt)))
-
-(def edn (make-type-helper
-           "edn"
-           "application/edn"
-           #(binding [*print-namespace-maps* false]
-              (pr-str %))))
-
-(def twiml (make-type-helper
-             "twiml"
-             "text/xml"
-             #(.toString %)))
-
-(def css (make-type-helper
-           "css"
-           "text/css"
-           identity))
+(defonce send-response (make-send serializers))
 
 ; helpers
 (defn render! [res component props]
@@ -139,14 +122,14 @@
       (if (some? err)
         (.sendStatus res 401)
         (do
-          (.twiml res (message-receipt))
+          (send-response res :twiml (message-receipt))
           (queue/enqueue
             {:data post
              :queue (.. js/process -env -POST_QUEUE_NAME)
              :connection-string (.. js/process -env -RABBITMQ_BIGWIG_TX_URL)}))))))
 
 (defn api-response-handler [res data component]
-  (.format res #js {"application/edn" #(.edn res data)
+  (.format res #js {"application/edn" #(send-response res :edn data)
                     :json #(.send res (clj->js data))
                     :html #(render! res component data)}))
 
@@ -203,21 +186,21 @@
 
 (defn query [req res]
   (parser
-    {:cb #(.edn res %)
+    {:cb #(send-response res :edn %)
      :user {:id (.. req -signedCookies -id)}}
     (reader/read-string (-> req
                             .-body
                             .toString))))
 
 (defn theme [req res]
-  (.css res (styles/css {:pretty-print? (not (production?))})))
+  (send-response res :css (styles/css {:pretty-print? (not (production?))})))
 
 (def router (-> (.Router express)
-                (.get "/" restrict index)
-                (.get "/css/styles.css" css theme)
-                (.post "/query" restrict edn-parser-middleware edn query)
-                (.get "/posts/:id" restrict edn get-post)
-                (.get "/login" csrf-middleware login-page)
-                (.post "/login" form-parser-middleware csrf-middleware login)
+                (.get "/" middleware/restrict index)
+                (.get "/css/styles.css" theme)
+                (.post "/query" middleware/restrict middleware/edn-parser query)
+                (.get "/posts/:id" middleware/restrict get-post)
+                (.get "/login" middleware/csrf login-page)
+                (.post "/login" middleware/form-parser middleware/csrf login)
                 (.get "/logout" logout)
-                (.post "/twilio" form-parser-middleware twilio-middleware twiml create-post)))
+                (.post "/twilio" middleware/form-parser (middleware/twilio (production?)) create-post)))
