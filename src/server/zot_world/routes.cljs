@@ -14,6 +14,8 @@
 (defonce express (nodejs/require "express"))
 (defonce twilio (nodejs/require "twilio"))
 
+(def *default-post-page-size* 5)
+
 (defn production? []
   (= (.. js/process -env -NODE_ENV)
      "production"))
@@ -44,42 +46,40 @@
 
 ; routes
 (defn index [req res]
-  (db/tx
-    (fn [client cb]
-      (db/site
-        client
-        {:slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)}
-        (fn [site]
-          (db/recent-posts
-            client
-            #(cb nil (merge {:site site} {:posts %}))))))
-    (fn [err {:keys [site posts]}]
-      (render!
-        res
-        (components/app-page
-          (components/data {:posts posts
-                            :site (select-keys site [:id])
-                            :user {:id (.-id (.-signedCookies req))}}))
-        {:title (:title site)}))))
+  (-> (db/tx
+        (fn [client]
+          (-> (db/query :sites {:limit 1
+                                :client client
+                                :where {:slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)}})
+              (.then (fn [site]
+                       (-> (db/query :posts {:limit *default-post-page-size*
+                                             :client client
+                                             :where {:site_id (:id site)}})
+                           (.then #(merge {:site site} {:posts %}))))))))
+      (.then (fn [{:keys [site posts]}]
+               (render!
+                 res
+                 (components/app-page
+                   (components/data {:posts posts
+                                     :site (select-keys site [:id])
+                                     :user {:id (.-id (.-signedCookies req))}}))
+                 {:title (:title site)})))))
 
 (defn login-page [req res]
-  (db/tx
-    (fn [client cb]
-      (db/site
-        client
-        {:slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)}
-        #(cb nil %)))
-    (fn [err {:keys [title]}]
-      (render!
-        res
-        (components/page
-          {:body (dom/section nil
-                   (dom/h1 #js {:className "f1 f-6-ns lh-solid measure center tc"}
-                     title)
-                   (components/login {:action "/login"
-                                      :csrf-token (.csrfToken req)
-                                      :method "post"}))})
-        {:title title}))))
+  (-> (db/tx
+        #(db/query :sites {:limit 1
+                           :client %
+                           :where {:slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)}}))
+      (.then (fn [{:keys [title]}]
+               (render!
+                 res
+                 (components/page
+                   {:body (dom/section nil
+                            (dom/h1 #js {:className "f1 f-6-ns lh-solid measure center tc"} title)
+                            (components/login {:action "/login"
+                                               :csrf-token (.csrfToken req)
+                                               :method "post"}))})
+                 {:title title})))))
 
 (defn login [req res]
   (let [data      (.-body req)
@@ -91,8 +91,8 @@
       (db/user-by-email-password
         email
         password
-        (fn [user]
-          (if-not (nil? user)
+        (fn [err user]
+          (if (some? user)
             (-> res
               (.cookie "id"
                        (:id user)
@@ -128,36 +128,25 @@
              :queue (.. js/process -env -POST_QUEUE_NAME)
              :connection-string (.. js/process -env -RABBITMQ_BIGWIG_TX_URL)}))))))
 
-(defn api-response-handler [res data component]
-  (.format res #js {"application/edn" #(send! res :edn data)
-                    :json #(.send res (clj->js data))
-                    :html #(render! res component data)}))
-
-(defn get-post [req res]
-  (db/post
-    {:id (.. req -params -id)}
-    #(api-response-handler
-       res
-       %
-       components/post)))
-
 (defmulti read om/dispatch)
 
 (defmethod read :posts
-  [{:keys [cb user]} key {:keys [until]}]
-  (db/posts-until
-    until
-    (fn [posts]
-      (cb (reduce
-            #(merge-with (fn [l r]
-                           (if (vector? l)
-                             (into l r)
-                             (merge l r)))
-                         %
-                         {:posts [`[:posts/by-id ~(:id %2)]]
-                          :posts/by-id (assoc {} (:id %2) %2)})
-            {}
-            posts)))))
+  [{:keys [cb user]} key {:keys [site-id until]}]
+  (-> (db/posts-until
+       {:limit *default-post-page-size*
+        :until until
+        :where {:site_id site-id}})
+      (.then (fn [posts]
+               (cb (reduce
+                     #(merge-with (fn [l r]
+                                    (if (vector? l)
+                                      (into l r)
+                                      (merge l r)))
+                                  %
+                                  {:posts [`[:posts/by-id ~(:id %2)]]
+                                   :posts/by-id (assoc {} (:id %2) %2)})
+                     {}
+                     posts))))))
 
 (defmulti mutate om/dispatch)
 
@@ -199,7 +188,6 @@
                 (.get "/" middleware/restrict index)
                 (.get "/css/styles.css" theme)
                 (.post "/query" middleware/restrict middleware/edn-parser query)
-                (.get "/posts/:id" middleware/restrict get-post)
                 (.get "/login" middleware/csrf login-page)
                 (.post "/login" middleware/form-parser middleware/csrf login)
                 (.get "/logout" logout)

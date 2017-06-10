@@ -12,9 +12,6 @@
 (defn str-sql [line & lines]
   (reduce #(str % "\n" %2) line lines))
 
-(defn tx [f cb]
-  (.transaction sql f cb))
-
 (defn row-handler [cb]
   (fn [error rows]
     (if-not (nil? error)
@@ -23,53 +20,63 @@
       ; constructors
       (cb (js->clj (to-json rows) :keywordize-keys true)))))
 
-(defn posts-query
-  ([f] (posts-query f))
-  ([client f]
-   (-> client
-       .select
-       (.from "posts_view")
-       f)))
+(defn wrap-promise [f cb]
+  (-> (f)
+      (.then #(cb nil %))
+      (.catch #(cb %))))
 
-(defn recent-posts
-  ([cb] (recent-posts sql cb))
-  ([client cb]
-   (posts-query
-     client
-     #(-> %
-          (.limit 5)
-          (.rows (row-handler cb))))))
+(defn tx
+  ([f]
+   (js/Promise.
+     (fn [res rej]
+       (tx (fn [client cb]
+             (wrap-promise #(f client) cb))
+           (fn [err data]
+             (if (some? err)
+               (rej err)
+               (res data)))))))
+  ([f cb]
+   (.transaction sql f cb)))
 
-(defn posts-until
-  ([until cb] (posts-until sql until cb))
-  ([client until cb]
-   (posts-query
-     client
-     #(-> %
-          (.where (-> sql
-                      .-sql
-                      (.lt "created_at" until)))
-          (.limit 5)
-          (.rows (row-handler cb))))))
+(def table-query-configurations {:posts {:table "posts_view"}
+                                 :sites {:table "sites_view"}
+                                 :users {:table "users"}})
 
-(defn table-query
-  ([table query cb] (table-query sql table query cb))
-  ([client table query cb]
-   (-> client
-       .select
-       (.from table)
-       (.where (clj->js query))
-       (.rows (row-handler cb)))))
+(defn make-query-fn [query-configurations]
+  (fn [query-type {:keys [client limit where] :as config}]
+    (js/Promise.
+      (fn [res rej]
+        (let [query-type-config (get query-configurations query-type)
+              handler (fn [err data]
+                        (if (some? err)
+                          (rej err)
+                          (res (js->clj (to-json data) :keywordize-keys true))))]
+          (-> (if (some? client)
+                client
+                sql)
+              .select
+              (.from (:table query-type-config))
+              (cond->
+                (some? where) (.where (clj->js where)))
+              (cond->
+                (some? limit) (.limit limit))
+              (cond->
+                (= limit 1) (.row handler)
+                (or (nil? limit) (> limit 1)) (.rows handler))))))))
 
-(defn site
-  ([query cb] (site sql query cb))
-  ([client query cb]
-   (table-query client "sites" query #(cb (first %)))))
+(def query (make-query-fn table-query-configurations))
 
-(defn post
-  ([query cb] (post sql query cb))
-  ([client query cb]
-   (table-query client "posts_view" query #(cb (first %)))))
+(defn posts-until [{:keys [until] :as config}]
+  (query
+    :posts
+    (merge
+      config
+      {:where (-> sql
+                  .-sql
+                  (.and (clj->js (:where config))
+                        (-> sql
+                            .-sql
+                            (.lt "created_at" until))))})))
 
 (defn now-timestamp []
   (-> js/moment
@@ -126,36 +133,24 @@
        (.returning "*")
        (.row (row-handler cb)))))
 
-(defn users [query cb]
-  (-> sql
-      .select
-      (.from "users")
-      (.where (clj->js query))
-      (.rows (row-handler cb))))
-
-(defn user [query cb]
-  (users
-    query
-    #(cb (first %))))
-
-(defn user-by-email [email cb]
-  (user {:email email
-         :is_deleted false}
-        cb))
+(defn user-by-email [email]
+  (query
+    :users
+    {:limit 1
+     :where {:email email
+             :is_deleted false}}))
 
 (defn user-by-email-password [email password cb]
-  (user-by-email
-    email
-    (fn [user]
-      (if-not (nil? user)
-        (.compare bcrypt password
-                         (:password user)
-                         (fn [err, match?]
-                           (if-not (nil? err)
-                             (throw err)
-                             (cb (when match?
-                                   user)))))
-        (cb)))))
+  (-> (user-by-email email)
+      (.then (fn [user]
+               (if (some? user)
+                 (.compare bcrypt password
+                           (:password user)
+                           (fn [err, match?]
+                             (if (some? err)
+                               (cb err)
+                               (cb nil (when match? user))))))))
+      (.catch #(cb %))))
 
 (defn update-post-likes
   ([post-id user-id cb]
@@ -179,10 +174,12 @@
           post-id
           user-id
           (fn []
-            (post
-              client
-              {:id post-id}
-              #(callback nil %)))))
+            (wrap-promise #(query
+                             :posts
+                             {:limit 1
+                              :client client
+                              :where {:id post-id}})
+                          callback))))
       cb))
 
 (defn add-post-comment [post-id user-id body cb]
@@ -192,9 +189,11 @@
           {:author_id user-id
            :post_id post-id
            :body body}
-          (fn [_]
-            (post
-              client
-              {:id post-id}
-              #(callback nil %)))))
+          (fn []
+            (wrap-promise #(query
+                             :posts
+                             {:limit 1
+                              :client client
+                              :where {:id post-id}})
+                          callback))))
       cb))

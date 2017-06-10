@@ -91,7 +91,8 @@
           (om/update-query!
             root
             (fn [q]
-              (update q :params merge {:until (:created_at post)}))))))
+              (update q :params merge {:until (:created_at post)
+                                       :site-id (get-in @state [:site :id])}))))))
     25))
 
 (add-listener "scroll" #(handle-scroll))
