@@ -151,7 +151,10 @@
                              :name "post-conversation"
                              :onClick #(om/set-state! this {:expanded (not (:expanded state))})
                              :type "button"}))
-          (dom/li #js {:className "dib mr3"}
+          (dom/li #js {:className "dib mr3 gray"}
+            "posted by "
+            (username {:username (:author_username props)})
+            " "
             (ago {:date (:created_at props)})))
         (when (:expanded state)
           (dom/section #js {:className "pb3 ph2 bg-near-white"}
