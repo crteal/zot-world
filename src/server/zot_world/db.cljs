@@ -162,9 +162,10 @@
                   "posts"
                "SET likes = CASE WHEN $2 = ANY(likes) THEN array_subtract(likes, array[$2]::uuid[])"
                                 "ELSE array_append(likes, $2::uuid)"
-                           "END"
+                           "END,"
+               "updated_at = $3"
                "WHERE id = $1;")
-             #js [post-id user-id])
+             #js [post-id user-id (now-timestamp)])
        (.run cb))))
 
 (defn toggle-post-engagement [post-id user-id cb]
