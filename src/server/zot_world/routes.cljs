@@ -36,7 +36,7 @@
             (contains? config :headers) (.set (clj->js (:headers config))))
           (.send (serializer data))))))
 
-(defonce send-response (make-send serializers))
+(defonce send! (make-send serializers))
 
 ; helpers
 (defn render! [res component props]
@@ -122,14 +122,14 @@
       (if (some? err)
         (.sendStatus res 401)
         (do
-          (send-response res :twiml (message-receipt))
+          (send! res :twiml (message-receipt))
           (queue/enqueue
             {:data post
              :queue (.. js/process -env -POST_QUEUE_NAME)
              :connection-string (.. js/process -env -RABBITMQ_BIGWIG_TX_URL)}))))))
 
 (defn api-response-handler [res data component]
-  (.format res #js {"application/edn" #(send-response res :edn data)
+  (.format res #js {"application/edn" #(send! res :edn data)
                     :json #(.send res (clj->js data))
                     :html #(render! res component data)}))
 
@@ -186,14 +186,14 @@
 
 (defn query [req res]
   (parser
-    {:cb #(send-response res :edn %)
+    {:cb #(send! res :edn %)
      :user {:id (.. req -signedCookies -id)}}
     (reader/read-string (-> req
                             .-body
                             .toString))))
 
 (defn theme [req res]
-  (send-response res :css (styles/css {:pretty-print? (not (production?))})))
+  (send! res :css (styles/css {:pretty-print? (not (production?))})))
 
 (def router (-> (.Router express)
                 (.get "/" middleware/restrict index)
