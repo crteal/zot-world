@@ -149,7 +149,8 @@
                            (fn [err, match?]
                              (if (some? err)
                                (cb err)
-                               (cb nil (when match? user))))))))
+                               (cb nil (when match? user)))))
+                 (cb nil))))
       (.catch #(cb %))))
 
 (defn update-post-likes
