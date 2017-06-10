@@ -27,7 +27,6 @@
       :worker {:source-paths ["src/shared"
                               "src/server"
                               "src/worker"]
-               :figwheel true
                :compiler {:infer-externs true
                           :main zot-world.worker.core
                           :optimizations :none
@@ -36,7 +35,6 @@
                           :target :nodejs}}
       :server {:source-paths ["src/shared"
                               "src/server"]
-               :figwheel true
                :compiler {:infer-externs true
                           :main zot-world.server.core
                           :optimizations :none
