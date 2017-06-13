@@ -30,15 +30,13 @@
 (defn make-send [serializer-configurations]
   (fn [res content-type data]
     (let [config (get serializer-configurations content-type)
-          serializer (if-some [f (:serializer config)]
-                       f
-                       identity)]
+          serializer (get config :serializer identity)]
       (-> res
           (cond->
             (contains? config :headers) (.set (clj->js (:headers config))))
           (.send (serializer data))))))
 
-(defonce send! (make-send serializers))
+(def send! (make-send serializers))
 
 ; helpers
 (defn render! [res component props]
@@ -46,40 +44,47 @@
 
 ; routes
 (defn index [req res]
-  (-> (db/tx
-        (fn [client]
-          (-> (db/query :sites {:limit 1
-                                :client client
-                                :where {:slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)}})
-              (.then (fn [site]
-                       (-> (db/query :posts {:limit *default-post-page-size*
-                                             :client client
-                                             :where {:site_id (:id site)}})
-                           (.then #(merge {:site site} {:posts %}))))))))
-      (.then (fn [{:keys [site posts]}]
-               (render!
-                 res
-                 (components/app-page
-                   (components/data {:posts posts
-                                     :site (select-keys site [:id])
-                                     :user {:id (.-id (.-signedCookies req))}}))
-                 {:title (:title site)})))))
+  (.then
+    (db/tx
+      (fn [client]
+        (.then
+          (db/query :sites
+            {:limit 1
+             :client client
+             :where {:slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)}})
+          (fn [site]
+            (.then
+              (db/query :posts
+                {:limit *default-post-page-size*
+                 :client client
+                 :where {:site_id (:id site)}})
+              #(merge {:site site} {:posts %}))))))
+    (fn [{:keys [site posts]}]
+      (render!
+        res
+        (components/app-page
+          (components/data {:posts posts
+                            :site (select-keys site [:id])
+                            :user {:id (.-id (.-signedCookies req))}}))
+        {:title (:title site)}))))
 
 (defn login-page [req res]
-  (-> (db/tx
-        #(db/query :sites {:limit 1
-                           :client %
-                           :where {:slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)}}))
-      (.then (fn [{:keys [title]}]
-               (render!
-                 res
-                 (components/page
-                   {:body (dom/section nil
-                            (dom/h1 #js {:className "f1 f-6-ns lh-solid measure center tc"} title)
-                            (components/login {:action "/login"
-                                               :csrf-token (.csrfToken req)
-                                               :method "post"}))})
-                 {:title title})))))
+  (.then
+    (db/tx
+      #(db/query :sites
+         {:limit 1
+          :client %
+          :where {:slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)}}))
+    (fn [{:keys [title]}]
+      (render!
+        res
+        (components/page
+          {:body (dom/section nil
+                   (dom/h1 #js {:className "f1 f-6-ns lh-solid measure center tc"} title)
+                   (components/login {:action "/login"
+                                      :csrf-token (.csrfToken req)
+                                      :method "post"}))})
+        {:title title}))))
 
 (defn login [req res]
   (let [data      (.-body req)
@@ -128,25 +133,29 @@
              :queue (.. js/process -env -POST_QUEUE_NAME)
              :connection-string (.. js/process -env -RABBITMQ_BIGWIG_TX_URL)}))))))
 
+(defn theme [req res]
+  (send! res :css (styles/css {:pretty-print? (not (production?))})))
+
 (defmulti read om/dispatch)
 
 (defmethod read :posts
   [{:keys [cb user]} key {:keys [site-id until]}]
-  (-> (db/posts-until
-       {:limit *default-post-page-size*
-        :until until
-        :where {:site_id site-id}})
-      (.then (fn [posts]
-               (cb (reduce
-                     #(merge-with (fn [l r]
-                                    (if (vector? l)
-                                      (into l r)
-                                      (merge l r)))
-                                  %
-                                  {:posts [`[:posts/by-id ~(:id %2)]]
-                                   :posts/by-id (assoc {} (:id %2) %2)})
-                     {}
-                     posts))))))
+  (.then
+    (db/posts-until
+      {:limit *default-post-page-size*
+       :until until
+       :where {:site_id site-id}})
+    (fn [posts]
+      (cb (reduce
+            #(merge-with (fn [l r]
+                           (if (vector? l)
+                             (into l r)
+                             (merge l r)))
+                         %
+                         {:posts [`[:posts/by-id ~(:id %2)]]
+                          :posts/by-id (assoc {} (:id %2) %2)})
+            {}
+            posts)))))
 
 (defmulti mutate om/dispatch)
 
@@ -181,14 +190,12 @@
                             .-body
                             .toString))))
 
-(defn theme [req res]
-  (send! res :css (styles/css {:pretty-print? (not (production?))})))
-
-(def router (-> (.Router express)
-                (.get "/" middleware/restrict index)
-                (.get "/css/styles.css" theme)
-                (.post "/query" middleware/restrict middleware/edn-parser query)
-                (.get "/login" middleware/csrf login-page)
-                (.post "/login" middleware/form-parser middleware/csrf login)
-                (.get "/logout" logout)
-                (.post "/twilio" middleware/form-parser (middleware/twilio (production?)) create-post)))
+(def router
+  (doto (.Router express)
+    (.get "/" middleware/restrict index)
+    (.get "/css/styles.css" theme)
+    (.get "/login" middleware/csrf login-page)
+    (.post "/login" middleware/form-parser middleware/csrf login)
+    (.get "/logout" logout)
+    (.post "/query" middleware/restrict middleware/edn-parser query)
+    (.post "/twilio" middleware/form-parser (middleware/twilio (production?)) create-post)))
