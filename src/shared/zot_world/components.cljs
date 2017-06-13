@@ -18,40 +18,66 @@
                                           mdc/strikethrough
                                           mdc/inline-code]))
 
+(defmulti make-field
+  (fn [config]
+    (:type config)))
+
+(defmethod make-field "checkbox" [config]
+  (dom/div #js {:className "mt3"}
+    (dom/label #js {:className "pa0 ma0 lh-copy f6 pointer"}
+      (dom/input (clj->js (dissoc config :label)))
+      (str " " (get config :label
+                    (str/capitalize (:name config)))))))
+
+(defmethod make-field "hidden" [config]
+  (dom/input (clj->js config)))
+
+(defmethod make-field "submit" [config]
+  (dom/input
+    (clj->js
+      (merge config
+             {:className "b ph3 pv2 input-reset ba b--black bg-white grow pointer f6 dib"}))))
+
+(defmethod make-field :default [config]
+  (dom/div #js {:className "mt3"}
+    (dom/label #js {:className "db fw6 lh-copy f6"}
+      (get config :label
+           (str/capitalize (:name config))))
+    (dom/input (clj->js (merge
+                          (dissoc config :label)
+                          {:className "pa2 input-reset ba w-100"})))))
+
+(defn ^:private make-fieldset [config]
+  (dom/fieldset #js {:className "ba b--transparent ph0 mh0"}
+    (map
+      #(make-field
+         (merge
+           {:name (name %)}
+           (get config %)))
+      (keys config))))
+
 (defui Login
   Object
   (render [this]
     (let [props (om/props this)]
       (dom/form (clj->js (merge {:className "center-ns mw6-ns hidden mv4 mh3"}
                                 (select-keys props [:action :method])))
-        (dom/fieldset #js {:className "ba b--transparent ph0 mh0"}
-          (dom/div #js {:className "mt3"}
-            (dom/label #js {:className "db fw6 lh-copy f6"} "Email")
-            (dom/input #js {:className "pa2 input-reset ba w-100"
-                            :name "email"
-                            :placeholder "Email address"
-                            :required true
-                            :type "email"}))
-          (dom/div #js {:className "mv3"}
-            (dom/label #js {:className "db fw6 lh-copy f6"} "Password")
-            (dom/input #js {:className "pa2 input-reset ba w-100"
-                            :name "password"
-                            :placeholder "Password"
-                            :minlength 6
-                            :required true
-                            :type "password"}))
-          (dom/label #js {:className "pa0 ma0 lh-copy f6 pointer"}
-            (dom/input #js {:name "remember"
-                            :type "checkbox"})
-            " Remember me")
-          (when-some [csrf-token (:csrf-token props)]
-            (dom/input #js {:name "_csrf"
-                            :type "hidden"
-                            :value csrf-token})))
-        (dom/div nil
-          (dom/input #js {:className "b ph3 pv2 input-reset ba b--black bg-white grow pointer f6 dib"
-                          :type "submit"
-                          :value "Sign in"}))))))
+        (make-fieldset
+          (merge
+            {:email {:placeholder "Email address"
+                     :required true
+                     :type "email"}
+             :password {:minlength 6
+                        :placeholder "Password"
+                        :required true
+                        :type "password"}
+             :remember {:label "Remember me"
+                        :type "checkbox"}}
+            (when-some [csrf-token (:csrf-token props)]
+              {:_csrf {:type "hidden"
+                       :value csrf-token}})))
+        (make-field {:type "submit"
+                     :value "Sign in"})))))
 
 (def login (om/factory Login))
 
