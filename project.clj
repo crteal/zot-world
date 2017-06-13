@@ -23,7 +23,7 @@
                           :optimizations :none
                           :output-dir "resources/js/out"
                           :output-to "resources/js/main.js"
-                          :source-map true}}
+                          :source-map "resources/js/main.js.map"}}
       :worker {:source-paths ["src/shared"
                               "src/server"
                               "src/worker"]
@@ -48,7 +48,6 @@
     :production {
       :cljsbuild {
         :builds {
-          :client {:compiler {:optimizations :advanced
-                              :source-map "resources/js/main.js.map"}}
+          :client {:compiler {:optimizations :advanced}}
           :worker {:compiler {:source-map false}}
           :server {:compiler {:source-map false}}}}}})
