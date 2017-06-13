@@ -21,8 +21,7 @@
 (defui Login
   Object
   (render [this]
-    (let [props (om/props this)
-          csrf-token (:csrf-token props)]
+    (let [props (om/props this)]
       (dom/form (clj->js (merge {:className "center-ns mw6-ns hidden mv4 mh3"}
                                 (select-keys props [:action :method])))
         (dom/fieldset #js {:className "ba b--transparent ph0 mh0"}
@@ -45,7 +44,7 @@
             (dom/input #js {:name "remember"
                             :type "checkbox"})
             " Remember me")
-          (when-not (nil? csrf-token)
+          (when-some [csrf-token (:csrf-token props)]
             (dom/input #js {:name "_csrf"
                             :type "hidden"
                             :value csrf-token})))
