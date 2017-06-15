@@ -132,6 +132,27 @@
         (set! (.-value el) "")
         (om/transact! c `[(post/conversation ~cmt)])))))
 
+(defmulti make-media
+  (fn [{:keys [content-type]}]
+    content-type))
+
+(defmethod make-media "video/mp4" [{:keys [id content-type url]}]
+  (dom/video #js {:autoPlay true
+                  :controls true
+                  :loop true
+                  :muted true
+                  :key id
+                  :className "db mv0 w-100"}
+    (dom/source #js {:src url
+                     :type "video/webm"})
+    (dom/source #js {:src url
+                     :type content-type})))
+
+(defmethod make-media :default [{:keys [id url]}]
+  (dom/img #js {:key id
+                :className "db mv0 w-100"
+                :src url}))
+
 (defui Post
   static om/Ident
   (ident [this {:keys [id]}]
@@ -149,9 +170,10 @@
       (dom/article #js {:className "center-ns mw6-ns hidden mv4 mh3 ba b--near-white"
                         :name "post"}
         (when (> num-media 0)
-          (map #(dom/img #js {:key %
-                              :className "db mv0 w-100"
-                              :src (get data (keyword (str "MediaUrl" %)))})
+          (map #(make-media
+                  {:id %
+                   :content-type (get data (keyword (str "MediaContentType" %)))
+                   :url (get data (keyword (str "MediaUrl" %)))})
                (range num-media)))
         (when-not (empty? (:Body data))
           (dom/p #js {:className "f6 f5-ns lh-copy ph2 pv3 ma0 bg-white"
