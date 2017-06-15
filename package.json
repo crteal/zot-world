@@ -23,7 +23,7 @@
     "ws": "3.0.0"
   },
   "engines": {
-    "node": "8.0.0"
+    "node": "8.1.2"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
