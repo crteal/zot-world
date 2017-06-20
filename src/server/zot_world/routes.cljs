@@ -12,6 +12,7 @@
             [zot-world.server.queue :as queue]))
 
 (defonce express (nodejs/require "express"))
+(defonce s3 (nodejs/require "aws-sdk/clients/s3"))
 (defonce twilio (nodejs/require "twilio"))
 
 (def *default-post-page-size* 5)
@@ -133,6 +134,18 @@
              :queue (.. js/process -env -POST_QUEUE_NAME)
              :connection-string (.. js/process -env -RABBITMQ_BIGWIG_TX_URL)}))))))
 
+(defn get-post-media [req res]
+  (-> (s3. #js {:accessKeyId (.. js/process -env -AWS_ACCESS_KEY)
+                :secretAccessKey (.. js/process -env -AWS_SECRET_ACCESS_KEY)})
+      (.getObject #js {:Bucket (.. js/process -env -AWS_S3_MEDIA_BUCKET)
+                       :Key (str (.. req -params -id) "/" (.. req -params -file))})
+      .createReadStream
+      (.on "error" (fn [err]
+                     (condp = (.-code err)
+                       "NoSuchKey" (.sendStatus res 404)
+                       (.sendStatus res 500))))
+      (.pipe res)))
+
 (defn theme [req res]
   (send! res :css (styles/css {:pretty-print? (not (production?))})))
 
@@ -197,5 +210,6 @@
     (.get "/login" middleware/csrf login-page)
     (.post "/login" middleware/form-parser middleware/csrf login)
     (.get "/logout" logout)
+    (.get "/posts/:id/:file" middleware/restrict get-post-media)
     (.post "/query" middleware/restrict middleware/edn-parser query)
     (.post "/twilio" middleware/form-parser (middleware/twilio (production?)) create-post)))

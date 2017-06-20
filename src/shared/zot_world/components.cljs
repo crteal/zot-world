@@ -136,14 +136,14 @@
   (fn [{:keys [content-type]}]
     content-type))
 
-(defmethod make-media "video/mp4" [{:keys [id content-type url]}]
+(defmethod make-media "video/mp4" [{:keys [id content-type post-id url]}]
   (dom/video #js {:autoPlay true
                   :controls true
                   :loop true
                   :muted true
                   :key id
                   :className "db mv0 w-100"}
-    (dom/source #js {:src url
+    (dom/source #js {:src (str "/posts/" post-id "/" id ".webm")
                      :type "video/webm"})
     (dom/source #js {:src url
                      :type content-type})))
@@ -172,6 +172,7 @@
         (when (> num-media 0)
           (map #(make-media
                   {:id %
+                   :post-id id
                    :content-type (get data (keyword (str "MediaContentType" %)))
                    :url (get data (keyword (str "MediaUrl" %)))})
                (range num-media)))
