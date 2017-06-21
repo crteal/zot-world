@@ -153,6 +153,16 @@
                  (cb nil))))
       (.catch #(cb %))))
 
+(defn create-user
+  ([data cb]
+   (create-user sql data cb))
+  ([client data cb]
+   (-> client
+       (.insert "users" (clj->js (conj data
+                                       {:created_at (now-timestamp)})))
+       (.returning "*")
+       (.row (row-handler cb)))))
+
 (defn update-post-likes
   ([post-id user-id cb]
    (update-post-likes sql post-id user-id cb))

@@ -11,7 +11,9 @@
             [zot-world.styles :as styles]
             [zot-world.server.queue :as queue]))
 
+(defonce bcrypt (nodejs/require "bcrypt"))
 (defonce express (nodejs/require "express"))
+(defonce jwt (nodejs/require "jsonwebtoken"))
 (defonce s3 (nodejs/require "aws-sdk/clients/s3"))
 (defonce twilio (nodejs/require "twilio"))
 
@@ -115,6 +117,59 @@
       (.clearCookie "id")
       (.redirect "/")))
 
+(defn register-page [req res]
+  (.then
+    (db/tx
+      #(db/query :sites
+         {:limit 1
+          :client %
+          :where {:slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)}}))
+    (fn [{:keys [title]}]
+      (render!
+        res
+        (components/page
+          {:body (dom/section nil
+                   (dom/h1 #js {:className "f1 f-6-ns lh-solid measure center tc"} title)
+                   (components/register {:action "/register"
+                                         :csrf-token (.csrfToken req)
+                                         :method "post"}))})
+        {:title title}))))
+
+(defn register [req res]
+  (let [data      (.-body req)
+        username (.-username data)
+        phone-number (.-phone_number data)
+        email     (.-email data)
+        password  (.-password data)
+        beta-key (.-beta_key data)]
+    (if (or (nil? username)
+            (nil? phone-number)
+            (nil? email)
+            (nil? password)
+            (nil? beta-key))
+      (.redirect res "/register")
+      (.verify jwt
+        beta-key
+        (.. js/process -env -BETA_KEY_SECRET)
+        (clj->js {:algorithms ["HS256"]})
+        (fn [err token]
+          (if (some? err)
+            (.redirect res "/register")
+            (.hash bcrypt
+              password
+              10
+              (fn [e hashed-password]
+                (if (some? e)
+                  (.redirect res "/register")
+                  (db/create-user
+                    {:username username
+                     :email email
+                     :password hashed-password
+                     :phone_number phone-number}
+                    #(if (some? %)
+                       (login req res)
+                       (.redirect res "/register"))))))))))))
+
 (defn message-receipt []
   (doto (twilio.twiml.MessagingResponse.)
     (.message
@@ -207,6 +262,8 @@
   (doto (.Router express)
     (.get "/" middleware/restrict index)
     (.get "/css/styles.css" theme)
+    (.get "/register" middleware/csrf register-page)
+    (.post "/register" middleware/form-parser middleware/csrf register)
     (.get "/login" middleware/csrf login-page)
     (.post "/login" middleware/form-parser middleware/csrf login)
     (.get "/logout" logout)

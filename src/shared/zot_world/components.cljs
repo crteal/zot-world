@@ -81,6 +81,39 @@
 
 (def login (om/factory Login))
 
+(defui Register
+  Object
+  (render [this]
+    (let [props (om/props this)]
+      (dom/form (clj->js (merge {:className "center-ns mw6-ns hidden mv4 mh3"}
+                                (select-keys props [:action :method])))
+        (make-fieldset
+          (merge
+            {:username {:placeholder "Username"
+                        :required true}
+             :phone_number {:label "Phone Number"
+                            :placeholder "Phone number"
+                            :required true
+                            :type "tel"}
+             :email {:placeholder "Email address"
+                     :required true
+                     :type "email"}
+             :password {:minlength 6
+                        :placeholder "Password"
+                        :required true
+                        :type "password"}
+             :beta_key {:label "Beta Key"
+                        :placeholder "Beta key"
+                        :required true
+                        :type "text"}}
+            (when-some [csrf-token (:csrf-token props)]
+              {:_csrf {:type "hidden"
+                       :value csrf-token}})))
+        (make-field {:type "submit"
+                     :value "Sign up"})))))
+
+(def register (om/factory Register))
+
 (defn emojify [s]
   (.parse js/twemoji s))
 
