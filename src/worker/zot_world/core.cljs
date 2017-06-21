@@ -19,7 +19,7 @@
     (-> (s3. #js {:accessKeyId (.. js/process -env -AWS_ACCESS_KEY)
                   :secretAccessKey (.. js/process -env -AWS_SECRET_ACCESS_KEY)})
         (.upload (clj->js {:Body stream
-                           :Bucket (.. js/process -env -S3_MEDIA_BUCKET)
+                           :Bucket (.. js/process -env -AWS_S3_MEDIA_BUCKET)
                            :ContentType content-type
                            :Key (str post-id "/" k)})
                  cb))
@@ -61,6 +61,7 @@
                             (-> msg
                                 .-content
                                 .toString)))
-                        (.then #(.ack chan msg)))))})))
+                        (.then #(.ack chan msg))
+                        (.catch #(.error js/console %)))))})))
 
 (set! *main-cli-fn* -main)
