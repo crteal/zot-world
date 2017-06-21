@@ -1,9 +1,9 @@
 (defproject zot-world "0.1.0-SNAPSHOT"
   :min-lein-version "2.0.0"
   :dependencies [[cljsjs/moment             "2.17.1-1"]
-                 [cljsjs/react              "15.6.0-1"]
-                 [cljsjs/react-dom          "15.6.0-1"]
-                 [cljsjs/react-dom-server   "15.6.0-1"]
+                 [cljsjs/react              "15.6.1-0"]
+                 [cljsjs/react-dom          "15.6.1-0"]
+                 [cljsjs/react-dom-server   "15.6.1-0"]
                  [cljsjs/twemoji            "2.3.0-0"]
                  [garden                    "1.3.2"]
                  [markdown-clj              "0.9.99"]
