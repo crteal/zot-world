@@ -8,7 +8,7 @@
                  [garden                    "1.3.2"]
                  [markdown-clj              "0.9.99"]
                  [org.clojure/clojure       "1.9.0-alpha17"]
-                 [org.clojure/clojurescript "1.9.660"]
+                 [org.clojure/clojurescript "1.9.671"]
                  [org.omcljs/om             "1.0.0-beta1" :exclusions [cljsjs/react cljsjs/react-dom]]]
   :plugins [[lein-cljsbuild "1.1.6"]]
   :clean-targets ^{:protect false} ["resources/js/out"
