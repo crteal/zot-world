@@ -20,9 +20,9 @@ apt-get install -y build-essential nodejs openjdk-8-jdk postgresql-9.6 rabbitmq-
 
 wget -qO- https://toolbelt.heroku.com/install-ubuntu.sh | sh
 
-rabbitmqctl add_user '$RABBITMQ_USER' '$RABBITMQ_PASSWORD'
-rabbitmqctl set_user_tags '$RABBITMQ_USER' administrator
-rabbitmqctl set_permissions -p / '$RABBITMQ_USER' ".*" ".*" ".*"
+rabbitmqctl add_user "$RABBITMQ_USER" "$RABBITMQ_PASSWORD"
+rabbitmqctl set_user_tags "$RABBITMQ_USER" administrator
+rabbitmqctl set_permissions -p / "$RABBITMQ_USER" ".*" ".*" ".*"
 rabbitmq-plugins enable rabbitmq_management
 
 sudo -u postgres psql -c "ALTER USER postgres PASSWORD '$POSTGRES_PASSWORD';"
