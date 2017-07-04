@@ -18,6 +18,18 @@
                                           mdc/strikethrough
                                           mdc/inline-code]))
 
+(def supports-webp?
+  (memoize
+    (fn []
+      (let [canvas (doto (.createElement js/document "canvas")
+                     (aset "width" 1)
+                     (aset "height" 1))
+            ctx (.getContext canvas "2d")]
+        (= (-> canvas
+               (.toDataURL "image/webp")
+               (.indexOf "data:image/webp"))
+           0)))))
+
 (defmulti make-field
   (fn [config]
     (:type config)))
@@ -181,10 +193,41 @@
     (dom/source #js {:src url
                      :type content-type})))
 
-(defmethod make-media :default [{:keys [id url]}]
-  (dom/img #js {:key id
-                :className "db mv0 w-100"
-                :src url}))
+; TODO temporary fallback to Twilio, server should handle this
+(defn make-image-error-handler [{:keys [id component post-id url]}]
+  (fn [_]
+    (doto (om/react-ref component (str post-id "." id))
+      (aset "src" url))))
+
+(defmethod make-media :default [{:keys [id content-type post-id url] :as opts}]
+  (dom/img
+    (clj->js
+      (merge
+        {:key id
+         :className "db mv0 w-100"
+         :src url}
+        (when (and (= content-type "image/jpeg")
+                   (supports-webp?))
+          {:onError (make-image-error-handler opts)
+           :ref (str post-id "." id)
+           :src (str "/posts/" post-id "/" id ".webp")})))))
+
+(defui Media
+  Object
+  (render [this]
+    (let [{:keys [data id] :as props} (om/props this)
+          ;; TODO push this complexity to the server, normalize posts with types
+          num-media (js/parseInt (get data :NumMedia))]
+      (apply dom/section #js {:name "post-media"}
+        (map #(make-media
+                {:id %
+                 :post-id id
+                 :component this
+                 :content-type (get data (keyword (str "MediaContentType" %)))
+                 :url (get data (keyword (str "MediaUrl" %)))})
+           (range num-media))))))
+
+(def media (om/factory Media))
 
 (defui Post
   static om/Ident
@@ -197,18 +240,10 @@
   (render [this]
     (let [{:keys [comments data likes id] :as props} (om/props this)
           created-at (-> js/moment (.utc (:created_at props)))
-          ;; TODO push this complexity to the server, normalize posts with types
-          num-media (js/parseInt (:NumMedia data))
           state (om/get-state this)]
       (dom/article #js {:className "center-ns mw6-ns hidden mv4 mh3 ba b--near-white"
                         :name "post"}
-        (when (> num-media 0)
-          (map #(make-media
-                  {:id %
-                   :post-id id
-                   :content-type (get data (keyword (str "MediaContentType" %)))
-                   :url (get data (keyword (str "MediaUrl" %)))})
-               (range num-media)))
+        (media props)
         (when-not (empty? (:Body data))
           (dom/p #js {:className "f6 f5-ns lh-copy ph2 pv3 ma0 bg-white"
                       :dangerouslySetInnerHTML #js {:__html (-> (:Body data)
