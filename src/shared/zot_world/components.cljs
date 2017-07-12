@@ -346,7 +346,7 @@
               (dom/link #js {:href "/css/tachyons.min.css"
                              :rel "stylesheet"})
               head)
-            (dom/body #js {:className "mid-gray"}
+            (dom/body #js {:className "mid-gray system-sans-serif"}
               body
               scripts)))))))
 
