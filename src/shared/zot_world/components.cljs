@@ -181,7 +181,7 @@
   (fn [{:keys [content-type]}]
     content-type))
 
-(defmethod make-media "video/mp4" [{:keys [id content-type post-id url]}]
+(defn make-video [{:keys [id content-type post-id url]}]
   (dom/video #js {:autoPlay true
                   :controls true
                   :loop true
@@ -192,6 +192,12 @@
                      :type "video/webm"})
     (dom/source #js {:src url
                      :type content-type})))
+
+(defmethod make-media "video/3gpp" [options]
+  (make-video options))
+
+(defmethod make-media "video/mp4" [options]
+  (make-video options))
 
 ; TODO temporary fallback to Twilio, server should handle this
 (defn make-image-error-handler [{:keys [id component post-id url]}]
