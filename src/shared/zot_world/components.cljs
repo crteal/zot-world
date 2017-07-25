@@ -3,6 +3,7 @@
             [cljsjs.twemoji]
             [clojure.string :as str]
             [goog.functions]
+            [goog.object :as gobj]
             [markdown.core :as md]
             [markdown.common :as mdc]
             [om.next :as om :refer-macros [defui ui]]
@@ -22,8 +23,8 @@
   (memoize
     (fn []
       (let [canvas (doto (.createElement js/document "canvas")
-                     (aset "width" 1)
-                     (aset "height" 1))
+                     (gobj/set "width" 1)
+                     (gobj/set "height" 1))
             ctx (.getContext canvas "2d")]
         (= (-> canvas
                (.toDataURL "image/webp")
@@ -203,7 +204,7 @@
 (defn make-image-error-handler [{:keys [id component post-id url]}]
   (fn [_]
     (doto (om/react-ref component (str post-id "." id))
-      (aset "src" url))))
+      (gobj/set "src" url))))
 
 (defmethod make-media :default [{:keys [id content-type post-id url] :as opts}]
   (dom/img
