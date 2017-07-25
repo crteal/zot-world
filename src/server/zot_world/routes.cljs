@@ -199,7 +199,10 @@
       (.on "error" (fn [err]
                      (condp = (.-code err)
                        "NoSuchKey" (.sendStatus res 404)
-                       (.sendStatus res 500))))
+                       ; if the server has sent headers we can't respond now
+                       (if (.-headersSent res)
+                         (pr-str err)
+                         (.sendStatus res 500)))))
       (.pipe res)))
 
 (defn theme [req res]
