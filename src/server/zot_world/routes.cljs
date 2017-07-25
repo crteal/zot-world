@@ -66,6 +66,7 @@
       (render!
         res
         (components/app-page
+          (:title site)
           (components/data {:posts posts
                             :site (select-keys site [:id])
                             :user {:id (.-id (.-signedCookies req))}}))

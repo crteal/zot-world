@@ -357,14 +357,14 @@
               body
               scripts)))))))
 
-(defn app-page [c]
+(defn app-page [title c]
   (page {:head (dom/link #js {:href "/css/styles.css"
                               :rel "stylesheet"})
          :body (dom/section nil
                  (dom/header #js {:className "bg-white fixed w-100 ph3 pv3"
                                   :style #js {:zIndex 1}}
                    (dom/h1 #js {:className "f1 f-4-ns lh-solid center tc mv0"}
-                           "zot.world"))
+                           title))
                  (dom/section #js {:className "pt5"
                                    :id "app"})
                  c)
