@@ -10,7 +10,7 @@
                  [org.clojure/clojure       "1.9.0-alpha17"]
                  [org.clojure/clojurescript "1.9.671"]
                  [org.omcljs/om             "1.0.0-beta1" :exclusions [cljsjs/react cljsjs/react-dom]]]
-  :plugins [[lein-cljsbuild "1.1.6"]]
+  :plugins [[lein-cljsbuild "1.1.7"]]
   :clean-targets ^{:protect false} ["resources/js/out"
                                     "resources/js/main.js"
                                     "target"]
