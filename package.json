@@ -21,7 +21,7 @@
     "serve-static": "1.12.3",
     "source-map-support": "0.4.15",
     "twilio": "crteal/twilio-node#feature-twiml-surrogate-characters",
-    "ws": "3.0.0"
+    "ws": "3.1.0"
   },
   "engines": {
     "node": "8.2.1"
