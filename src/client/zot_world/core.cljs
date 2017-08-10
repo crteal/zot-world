@@ -67,32 +67,3 @@
 
 (om/add-root! reconciler
   components/Posts (gdom/getElement "app"))
-
-(defn add-listener
-  ([event f]
-   (add-listener js/window event f))
-  ([el event f]
-   (doto el
-    (.removeEventListener event f)
-    (.addEventListener event f))))
-
-(def handle-scroll
-  (goog.functions.debounce
-    (fn []
-      (let [state (om/app-state reconciler)
-            post (get-in @state (last (:posts @state)))
-            root (om/app-root reconciler)
-            params (om/get-params root)
-            height (.. js/document -body -clientHeight)
-            scroll (- (.. js/document -body -scrollHeight)
-                      (.. js/document -body -scrollTop))]
-        (when (and (not= (:until params) (:created_at post))
-                   (<= (/ (- scroll height) height) 2))
-          (om/update-query!
-            root
-            (fn [q]
-              (update q :params merge {:until (:created_at post)
-                                       :site-id (get-in @state [:site :id])}))))))
-    25))
-
-(add-listener "scroll" #(handle-scroll))

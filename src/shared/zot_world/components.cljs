@@ -2,6 +2,8 @@
   (:require [cljsjs.moment]
             [cljsjs.twemoji]
             [clojure.string :as str]
+            [clojure.browser.event :as event]
+            [goog.events :as gevents]
             [goog.functions]
             [goog.object :as gobj]
             [markdown.core :as md]
@@ -298,6 +300,24 @@
 
 (def post (om/factory Post {:keyfn :id}))
 
+(def make-posts-scroll-handler
+  (memoize
+    (fn [component]
+      (goog.functions.debounce
+        (fn []
+          (let [{:keys [posts]} (om/props component)
+                post (last posts)
+                params (om/get-params component)
+                height (.. js/document -body -clientHeight)
+                scroll (- (.. js/document -body -scrollHeight)
+                          (.. js/document -body -scrollTop))]
+            (when (and (not= (:until params) (:created_at post))
+                       (<= (/ (- scroll height) height) 2))
+              (om/set-query! component
+                             {:params {:site-id (:site_id post)
+                                       :until (:created_at post)}}))))
+        25))))
+
 (defui Posts
   static om/IQueryParams
   (params [this]
@@ -307,6 +327,14 @@
   (query [_]
     `[({:posts ~(om/get-query Post)} ~'{:site-id ?site-id :until ?until})])
   Object
+  (componentDidMount [this]
+    (gevents/listen
+      js/window goog.events.EventType.SCROLL
+      (make-posts-scroll-handler this)))
+  (componentWillUnmount [this]
+    (gevents/unlisten
+      js/window goog.events.EventType.SCROLL
+      (make-posts-scroll-handler this)))
   (render [this]
     (let [{:keys [posts]} (om/props this)]
       (apply dom/section #js {:name "posts"}
