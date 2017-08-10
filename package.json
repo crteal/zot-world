@@ -18,7 +18,7 @@
     "morgan": "1.8.2",
     "pg-bricks": "0.5.0",
     "request": "2.81.0",
-    "serve-static": "1.12.3",
+    "serve-static": "1.12.4",
     "source-map-support": "0.4.15",
     "twilio": "crteal/twilio-node#feature-twiml-surrogate-characters",
     "ws": "3.1.0"
