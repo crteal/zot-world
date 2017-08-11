@@ -7,8 +7,8 @@
 (defonce csrf-package (nodejs/require "csurf"))
 (defonce twilio-package (nodejs/require "twilio"))
 
-(defonce csrf
-  (csrf-package #js {:cookie true}))
+(defn csrf []
+  (csrf-package #js {:cookie false}))
 
 (defonce form-parser
   (.urlencoded body-parser #js {:extended false}))
@@ -21,6 +21,7 @@
                                 :validate validate?}))
 
 (defn restrict [req res nxt]
-  (if (some? (.. req -signedCookies -id))
+  (if (and (some? (.-session req))
+           (some? (.-userId (.-session req))))
     (nxt)
     (.redirect res "/login")))

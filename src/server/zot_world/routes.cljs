@@ -5,6 +5,7 @@
             [om.dom :as dom]
             [cljsjs.react.dom.server]
             [clojure.string :as str]
+            [goog.object :as gobj]
             [zot-world.components :as components]
             [zot-world.server.db :as db]
             [zot-world.server.middleware :as middleware]
@@ -69,7 +70,7 @@
           (:title site)
           (components/data {:posts posts
                             :site (select-keys site [:id])
-                            :user {:id (.-id (.-signedCookies req))}}))
+                            :user {:id (.. req -session -userId)}}))
         {:title (:title site)}))))
 
 (defn login-page [req res]
@@ -102,21 +103,23 @@
         password
         (fn [err user]
           (if (some? user)
-            (-> res
-              (.cookie "id"
-                       (:id user)
-                       #js {:maxAge (if remember?
-                                      (* 1000 60 60 24 7)
-                                      3600000)
-                            :httpOnly true
-                            :signed true})
-              (.redirect "/"))
+            (do
+              (gobj/set (.-session req)
+                        "userId"
+                        (:id user))
+              (when remember?
+                (gobj/set (.-cookie (.-session req))
+                          "maxAge"
+                          (* 1000 60 60 24 7)))
+              (.redirect res "/"))
             (.redirect res "/login")))))))
 
 (defn logout [req res]
-  (-> res
-      (.clearCookie "id")
-      (.redirect "/")))
+  (if-let [session (.-session req)]
+    (.destroy
+      session
+      #(.redirect res "/"))
+    (.redirect res "/")))
 
 (defn register-page [req res]
   (.then
@@ -257,7 +260,7 @@
 (defn query [req res]
   (parser
     {:cb #(send! res :edn %)
-     :user {:id (.. req -signedCookies -id)}}
+     :user {:id (.. req -session -userId)}}
     (reader/read-string (-> req
                             .-body
                             .toString))))
@@ -266,10 +269,10 @@
   (doto (.Router express)
     (.get "/" middleware/restrict index)
     (.get "/css/styles.css" theme)
-    (.get "/register" middleware/csrf register-page)
+    (.get "/register" (middleware/csrf) register-page)
     (.post "/register" middleware/form-parser middleware/csrf register)
-    (.get "/login" middleware/csrf login-page)
-    (.post "/login" middleware/form-parser middleware/csrf login)
+    (.get "/login" (middleware/csrf) login-page)
+    (.post "/login" middleware/form-parser (middleware/csrf) login)
     (.get "/logout" logout)
     (.get "/posts/:id/:file" middleware/restrict get-post-media)
     (.post "/query" middleware/restrict middleware/edn-parser query)

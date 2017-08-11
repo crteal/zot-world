@@ -6,6 +6,7 @@ POSTGRES_PASSWORD=$(uuidgen)
 
 add-apt-repository ppa:git-core/ppa
 add-apt-repository ppa:openjdk-r/ppa
+add-apt-repository ppa:chris-lea/redis-server
 
 echo 'deb http://www.rabbitmq.com/debian/ testing main' | tee /etc/apt/sources.list.d/rabbitmq.list
 wget -O- https://www.rabbitmq.com/rabbitmq-release-signing-key.asc | sudo apt-key add -
@@ -16,7 +17,7 @@ wget --quiet -O- https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-k
 f
 
 apt-get update
-apt-get install -y build-essential nodejs openjdk-8-jdk postgresql-9.6 rabbitmq-server
+apt-get install -y build-essential nodejs openjdk-8-jdk postgresql-9.6 rabbitmq-server redis-server
 
 wget -qO- https://toolbelt.heroku.com/install-ubuntu.sh | sh
 
@@ -29,6 +30,8 @@ sudo -u postgres psql -c "ALTER USER postgres PASSWORD '$POSTGRES_PASSWORD';"
 sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" /etc/postgresql/9.6/main/postgresql.conf
 echo "host    all             all             all                     md5" >> /etc/postgresql/9.6/main/pg_hba.conf
 service postgresql restart
+
+sed -e 's/^bind 127.0.0.1/bind 0.0.0.0/' -i /etc/redis/redis.conf
 
 cat >> /etc/environment <<EOF
 DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@localhost:5432/zot_world

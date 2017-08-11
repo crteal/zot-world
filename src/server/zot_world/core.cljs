@@ -6,11 +6,13 @@
 (nodejs/enable-util-print!)
 
 (defonce compression (nodejs/require "compression"))
-(defonce cookie-parser (nodejs/require "cookie-parser"))
+(defonce connect-redis (nodejs/require "connect-redis"))
 (defonce express (nodejs/require "express"))
 (defonce helmet (nodejs/require "helmet"))
 (defonce http (nodejs/require "http"))
 (defonce morgan (nodejs/require "morgan"))
+(defonce session (nodejs/require "express-session"))
+(defonce RedisStore (connect-redis session))
 (defonce static-dir (nodejs/require "serve-static"))
 
 (defonce production? (= (.. js/process -env -NODE_ENV)
@@ -24,7 +26,14 @@
                              "combined"
                              "dev")))
              (.use (static-dir "resources"))
-             (.use (cookie-parser (.-COOKIE_SECRET (.-env js/process))))))
+             (.use (session (clj->js
+                              {:cookie {:httpOnly true
+                                        :maxAge 3600000}
+                               :resave false
+                               :rolling true
+                               :saveUninitialized false
+                               :store (RedisStore. #js {:url (.-REDIS_URL (.-env js/process))})
+                               :secret (.-COOKIE_SECRET (.-env js/process))})))))
 
 ;; routes get redefined on each reload
 (doto app
