@@ -6,7 +6,7 @@
   "dependencies": {
     "amqplib": "0.5.1",
     "aws-sdk": "2.98.0",
-    "bcrypt": "1.0.2",
+    "bcrypt": "1.0.3",
     "body-parser": "1.17.2",
     "compression": "1.7.0",
     "connect-redis": "3.3.0",
