@@ -6,7 +6,7 @@
                  [cljsjs/react-dom-server   "15.6.1-1"]
                  [cljsjs/twemoji            "2.3.0-0"]
                  [garden                    "1.3.2"]
-                 [markdown-clj              "0.9.99"]
+                 [markdown-clj              "1.0.1"]
                  [org.clojure/clojure       "1.9.0-alpha19"]
                  [org.clojure/clojurescript "1.9.671"]
                  [org.omcljs/om             "1.0.0-beta1" :exclusions [cljsjs/react cljsjs/react-dom]]]
