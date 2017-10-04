@@ -44,7 +44,7 @@
                           :target :nodejs}}}}
   :profiles {
     :dev {
-      :dependencies [[figwheel-sidecar "0.5.13"]]}
+      :dependencies [[figwheel-sidecar "0.5.14"]]}
     :production {
       :cljsbuild {
         :builds {
