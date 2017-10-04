@@ -8,7 +8,7 @@
     "aws-sdk": "2.126.0",
     "bcrypt": "1.0.3",
     "body-parser": "1.18.2",
-    "compression": "1.7.0",
+    "compression": "1.7.1",
     "connect-redis": "3.3.0",
     "csurf": "1.9.0",
     "dotenv": "4.0.0",
