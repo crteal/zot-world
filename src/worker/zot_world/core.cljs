@@ -2,6 +2,8 @@
   (:require
     [cljs.nodejs :as nodejs]
     [cljs.reader :as reader]
+    [zot-world.server.db :as db]
+    [zot-world.server.email :as email]
     [zot-world.server.queue :as queue]))
 
 (nodejs/enable-util-print!)
@@ -49,14 +51,69 @@
                (range (js/parseInt (:NumMedia data))))]
     (.all js/Promise (clj->js p))))
 
+(defn notify-comment-thread [{:keys [author body post]}]
+  (.then
+    (db/tx
+      (fn [client]
+        (.then
+          (db/query :sites
+            {:limit 1
+             :client client
+             :where {:id (:site_id post)}})
+          (fn [site]
+            (.then
+              (db/users-in
+                client
+                (disj (reduce
+                        (fn [m {:keys [author_id]}]
+                          (conj m author_id))
+                        #{}
+                        (:comments post))
+                      (:id author)))
+              (fn [participants]
+                {:site site :participants participants}))))))
+    (fn [{:keys [site participants]}]
+      (.all js/Promise
+        (clj->js
+          (map
+            (fn [participant]
+              (email/send
+                {:subject (str "💬 on " (:title site))
+                 :to [(:email participant)]
+                 :text (str (:username author)
+                            " wrote: \n\n"
+                            body
+                            "\n\nJoin the conversation at "
+                            (str (.. js/process -env -SYSTEM_BASE_URL) "/posts/" (:id post)))}))
+            participants))))))
+
+(defmulti message-handler
+  (fn [msg] (:type msg)))
+
+(defmethod message-handler :default
+  [msg]
+  (js/Promise.
+    (fn [res rej]
+      (rej (str "Unrecognized Message Type"
+                "\n"
+                (pr-str msg))))))
+
+(defmethod message-handler :post/upload
+  [{:keys [data] :as msg}]
+  (upload-post data))
+
+(defmethod message-handler :notification/comment
+  [{:keys [data] :as msg}]
+  (notify-comment-thread data))
+
 (def -main
   (fn []
     (queue/consume
-      {:queue (.. js/process -env -POST_QUEUE_NAME)
+      {:queue (.. js/process -env -SYSTEM_QUEUE_NAME)
        :connection-string (.. js/process -env -RABBITMQ_BIGWIG_RX_URL)
        :handler (fn [chan msg]
                   (when-not (nil? msg)
-                    (-> (upload-post
+                    (-> (message-handler
                           (reader/read-string
                             (-> msg
                                 .-content

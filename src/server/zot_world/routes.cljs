@@ -46,32 +46,55 @@
 (defn render! [res component props]
   (.send res (dom/render-to-str (component props))))
 
-; routes
-(defn index [req res]
-  (.then
-    (db/tx
-      (fn [client]
-        (.then
-          (db/query :sites
-            {:limit 1
-             :client client
-             :where {:slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)}})
-          (fn [site]
-            (.then
-              (db/query :posts
-                {:limit *default-post-page-size*
-                 :client client
-                 :where {:site_id (:id site)}})
-              #(merge {:site site} {:posts %}))))))
+(defn enqueue! [t data]
+  (queue/enqueue
+    {:data {:type t :data data}
+     :queue (.. js/process -env -SYSTEM_QUEUE_NAME)
+     :connection-string (.. js/process -env -RABBITMQ_BIGWIG_TX_URL)}))
+
+(defn site-page-renderer [f]
+  (fn [req res]
+    (.then
+      (db/tx
+        (fn [client]
+          (.then
+            (db/query :sites
+              {:limit 1
+               :client client
+               :where {:slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)}})
+            #(f req client %))))
     (fn [{:keys [site posts]}]
       (render!
         res
         (components/app-page
           (:title site)
-          (components/data {:posts posts
+          (components/data {:post-page-size *default-post-page-size*
+                            :posts posts
                             :site (select-keys site [:id])
                             :user {:id (.. req -session -userId)}}))
-        {:title (:title site)}))))
+        {:title (:title site)})))))
+
+; routes
+(def index
+  (site-page-renderer
+    (fn [_ client site]
+      (.then
+        (db/query :posts
+          {:limit *default-post-page-size*
+           :client client
+           :where {:site_id (:id site)}})
+        #(merge {:site site} {:posts %})))))
+
+(def post-page
+  (site-page-renderer
+    (fn [req client site]
+      (.then
+        (db/query :posts
+          {:limit 1
+           :client client
+           :where {:id (.. req -params -id)
+                   :site_id (:id site)}})
+        #(merge {:site site} {:posts [%]})))))
 
 (defn login-page [req res]
   (.then
@@ -190,10 +213,7 @@
         (.sendStatus res 401)
         (do
           (send! res :twiml (message-receipt))
-          (queue/enqueue
-            {:data post
-             :queue (.. js/process -env -POST_QUEUE_NAME)
-             :connection-string (.. js/process -env -RABBITMQ_BIGWIG_TX_URL)}))))))
+          (enqueue! :post/upload post))))))
 
 (defn get-post-media [req res]
   (-> (s3. #js {:accessKeyId (.. js/process -env -AWS_ACCESS_KEY)
@@ -255,6 +275,9 @@
        (:id user)
        body
        (fn [_ post]
+         (enqueue!
+           :notification/comment
+           {:author user :body body :post post})
          (cb `{:posts/by-id {~(:id post) ~post}}))))})
 
 (def parser (om/parser {:read read :mutate mutate}))
@@ -276,6 +299,7 @@
     (.get "/login" (middleware/csrf) login-page)
     (.post "/login" middleware/form-parser (middleware/csrf) login)
     (.get "/logout" logout)
+    (.get "/posts/:id" middleware/restrict post-page)
     (.get "/posts/:id/:file" middleware/restrict get-post-media)
     (.post "/query" middleware/restrict middleware/edn-parser query)
     (.post "/twilio" middleware/form-parser (middleware/twilio (production?)) create-post)))

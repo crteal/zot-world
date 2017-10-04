@@ -18,7 +18,7 @@
     :builds {
       :client {:source-paths ["src/shared"
                               "src/client"]
-               :compiler {:asset-path "js/out"
+               :compiler {:asset-path "/js/out"
                           :infer-externs true
                           :optimizations :none
                           :output-dir "resources/js/out"

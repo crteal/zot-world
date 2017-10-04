@@ -9,7 +9,7 @@
      [{:id "client"
        :figwheel true
        :source-paths ["src/shared" "src/client"]
-       :compiler {:asset-path "js/out"
+       :compiler {:asset-path "/js/out"
                   :infer-externs true
                   :main "zot-world.client.core"
                   :optimizations :none

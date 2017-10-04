@@ -133,6 +133,16 @@
        (.returning "*")
        (.row (row-handler cb)))))
 
+(defn users-in
+  ([ids] (users-in nil ids))
+  ([client ids]
+   (query
+     :users
+     {:client client
+      :where (-> sql
+                 .-sql
+                 (.in "id" (clj->js ids)))})))
+
 (defn user-by-email [email]
   (query
     :users

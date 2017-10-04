@@ -328,20 +328,24 @@
      :until nil})
   static om/IQuery
   (query [_]
-    `[({:posts ~(om/get-query Post)} ~'{:site-id ?site-id :until ?until})])
+    `[({:posts ~(om/get-query Post)} ~'{:site-id ?site-id :until ?until}) :post-page-size])
   Object
   (componentDidMount [this]
-    (gevents/listen
-      js/window goog.events.EventType.SCROLL
-      (make-posts-scroll-handler this)))
+    (let [{:keys [posts post-page-size]} (om/props this)]
+      (when (>= (count posts) post-page-size)
+        (gevents/listen
+          js/window goog.events.EventType.SCROLL
+          (make-posts-scroll-handler this)))))
   (componentWillUnmount [this]
-    (gevents/unlisten
-      js/window goog.events.EventType.SCROLL
-      (make-posts-scroll-handler this)))
+    (let [{:keys [posts post-page-size]} (om/props this)]
+      (when (>= (count posts) post-page-size)
+        (gevents/unlisten
+          js/window goog.events.EventType.SCROLL
+          (make-posts-scroll-handler this)))))
   (render [this]
-    (let [{:keys [posts]} (om/props this)]
+    (let [{:keys [posts post-page-size]} (om/props this)]
       (apply dom/section #js {:name "posts"}
-             (map post posts)))))
+        (map post posts)))))
 
 (def posts (om/factory Posts))
 
@@ -395,7 +399,9 @@
                  (dom/header #js {:className "bg-white fixed w-100 ph3 pv3"
                                   :style #js {:zIndex 1}}
                    (dom/h1 #js {:className "f1 f-4-ns lh-solid center tc mv0"}
-                           title))
+                     (dom/a #js {:className "link dim mid-gray"
+                                 :href "/"}
+                       title)))
                  (dom/section #js {:className "pt5"
                                    :id "app"})
                  c)
