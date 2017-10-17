@@ -202,6 +202,9 @@
 (defmethod make-media "video/mp4" [options]
   (make-video options))
 
+(defmethod make-media "video/mpeg" [options]
+  (make-video options))
+
 ; TODO temporary fallback to Twilio, server should handle this
 (defn make-image-error-handler [{:keys [id component post-id url]}]
   (fn [_]
