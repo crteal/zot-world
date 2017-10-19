@@ -51,7 +51,13 @@
                (range (js/parseInt (:NumMedia data))))]
     (.all js/Promise (clj->js p))))
 
-(defn notify-comment-thread [{:keys [author body post]}]
+(defn user-by-id [client id]
+  (db/query :users
+    {:limit 1
+     :client client
+     :where {:id id}}))
+
+(defn notify-applause [{:keys [fan post]}]
   (.then
     (db/tx
       (fn [client]
@@ -62,6 +68,33 @@
              :where {:id (:site_id post)}})
           (fn [site]
             (.then
+              (.all js/Promise #js [(user-by-id client (:author_id post))
+                                    (user-by-id client (:id fan))])
+              (fn [[author fan]]
+                {:site site :author author :fan fan}))))))
+    (fn [{:keys [site author fan]}]
+      (email/send
+        {:subject (str "😍 on " (:title site) " from " (:username fan))
+         :to [(:email author)]
+         :text (str "Check out the post at "
+                    (str (.. js/process -env -SYSTEM_BASE_URL) "/posts/" (:id post)))}))))
+
+(defn notify-comment-thread [{:keys [author body post]}]
+  (.then
+    (db/tx
+      (fn [client]
+        (.then
+          (js/Promise.all
+            #js [(db/query :sites
+                   {:limit 1
+                    :client client
+                    :where {:id (:site_id post)}})
+                 (db/query :users
+                   {:limit 1
+                    :client client
+                    :where author})])
+          (fn [[site author]]
+            (.then
               (db/users-in
                 client
                 (disj (reduce
@@ -71,8 +104,8 @@
                         (:comments post))
                       (:id author)))
               (fn [participants]
-                {:site site :participants participants}))))))
-    (fn [{:keys [site participants]}]
+                {:site site :participants participants :author author}))))))
+    (fn [{:keys [author participants site]}]
       (.all js/Promise
         (clj->js
           (map
@@ -101,6 +134,10 @@
 (defmethod message-handler :post/upload
   [{:keys [data] :as msg}]
   (upload-post data))
+
+(defmethod message-handler :notification/applause
+  [{:keys [data] :as msg}]
+  (notify-applause data))
 
 (defmethod message-handler :notification/comment
   [{:keys [data] :as msg}]

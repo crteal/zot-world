@@ -264,6 +264,13 @@
        id
        (:id user)
        (fn [_ post]
+         ;; when applause happened, and not by the author
+         (when (and
+                 (not= (:id user) (:author_id post))
+                 (some #(= (:id user) (:id %)) (:likes post)))
+           (enqueue!
+             :notification/applause
+             {:fan user :post post}))
          (cb `{:posts/by-id {~(:id post) ~post}}))))})
 
 (defmethod mutate 'post/conversation
