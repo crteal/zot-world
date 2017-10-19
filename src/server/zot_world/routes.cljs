@@ -86,18 +86,20 @@
         (components/page
           {:body (dom/section nil
                    (dom/h1 #js {:className "f1 f-6-ns lh-solid measure center tc"} title)
-                   (components/login {:action "/login"
-                                      :csrf-token (.csrfToken req)
+                   (components/login {:csrf-token (.csrfToken req)
                                       :method "post"}))})
         {:title title}))))
 
 (defn login [req res]
   (let [data      (.-body req)
         email     (.-email data)
+        original-url (.. req -originalUrl)
         password  (.-password data)
-        remember? (= (.-remember data) "on")]
+        remember? (= (.-remember data) "on")
+        url (when (re-find #"^/[^/]" (.. req -query -url))
+              (.. req -query -url))]
     (if (or (nil? email) (nil? password))
-      (.redirect res "/login")
+      (.redirect res original-url)
       (db/user-by-email-password
         email
         password
@@ -111,8 +113,8 @@
                 (gobj/set (.-cookie (.-session req))
                           "maxAge"
                           (* 1000 60 60 24 7)))
-              (.redirect res "/"))
-            (.redirect res "/login")))))))
+              (.redirect res (or url "/")))
+            (.redirect res original-url)))))))
 
 (defn logout [req res]
   (if-let [session (.-session req)]

@@ -24,4 +24,4 @@
   (if (and (some? (.-session req))
            (some? (.-userId (.-session req))))
     (nxt)
-    (.redirect res "/login")))
+    (.redirect res (str "/login?url=" (.-originalUrl req)))))
