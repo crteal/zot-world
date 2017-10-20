@@ -1,15 +1,20 @@
 (defproject zot-world "0.1.0-SNAPSHOT"
   :min-lein-version "2.0.0"
-  :dependencies [[cljsjs/moment             "2.17.1-1"]
-                 [cljsjs/react              "15.6.1-1"]
-                 [cljsjs/react-dom          "15.6.1-1"]
-                 [cljsjs/react-dom-server   "15.6.1-1"]
-                 [cljsjs/twemoji            "2.3.0-0"]
-                 [garden                    "1.3.3"]
-                 [markdown-clj              "1.0.1"]
-                 [org.clojure/clojure       "1.9.0-alpha19"]
-                 [org.clojure/clojurescript "1.9.671"]
-                 [org.omcljs/om             "1.0.0-beta1" :exclusions [cljsjs/react cljsjs/react-dom]]]
+  :dependencies [[cljsjs/moment               "2.17.1-1"]
+                 [cljsjs/react                "15.6.1-1"]
+                 [cljsjs/react-dom            "15.6.1-1"]
+                 [cljsjs/react-dom-server     "15.6.1-1"]
+                 [cljsjs/twemoji              "2.3.0-0"]
+                 [com.cognitect/transit-cljs  "0.8.243"]
+                 [garden                      "1.3.3"]
+                 [markdown-clj                "1.0.1"
+                  :exclusions [org.clojure/clojure]]
+                 [org.clojure/clojure         "1.9.0-alpha19"]
+                 [org.clojure/clojurescript   "1.9.671"]
+                 [org.omcljs/om               "1.0.0-beta1"
+                  :exclusions [cljsjs/react
+                               cljsjs/react-dom
+                               com.cognitect/transit-cljs]]]
   :plugins [[lein-cljsbuild "1.1.7"]]
   :clean-targets ^{:protect false} ["resources/js/out"
                                     "resources/js/main.js"
