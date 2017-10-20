@@ -19,6 +19,7 @@
       :client {:source-paths ["src/shared"
                               "src/client"]
                :compiler {:asset-path "/js/out"
+                          :language-in :ecmascript5
                           :infer-externs true
                           :optimizations :none
                           :output-dir "resources/js/out"
@@ -36,6 +37,7 @@
       :server {:source-paths ["src/shared"
                               "src/server"]
                :compiler {:infer-externs true
+                          :language-in :ecmascript5
                           :main zot-world.server.core
                           :optimizations :none
                           :output-dir "target/server"
