@@ -57,12 +57,7 @@
     (.then
       (db/tx
         (fn [client]
-          (.then
-            (db/query :sites
-              {:limit 1
-               :client client
-               :where {:slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)}})
-            #(f req client %))))
+          (f req client (.. req -site))))
     (fn [{:keys [site posts]}]
       (render!
         res
@@ -297,16 +292,49 @@
                             .-body
                             .toString))))
 
+(defn get-sluggable-route [route]
+  (if-some [slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)]
+    route
+    (str "/:slug" route)))
+
 (def router
   (doto (.Router express)
-    (.get "/" middleware/restrict index)
+    (.get "/"
+          middleware/restrict
+          middleware/load-site!
+          middleware/forbid-site-members
+          index)
     (.get "/css/styles.css" theme)
-    (.get "/register" (middleware/csrf) register-page)
-    (.post "/register" middleware/form-parser middleware/csrf register)
-    (.get "/login" (middleware/csrf) login-page)
-    (.post "/login" middleware/form-parser (middleware/csrf) login)
+    (.get "/register"
+          (middleware/csrf)
+          register-page)
+    (.post "/register"
+           middleware/form-parser
+           middleware/csrf
+           register)
+    (.get "/login"
+          (middleware/csrf)
+          login-page)
+    (.post "/login"
+           middleware/form-parser
+           (middleware/csrf)
+           login)
     (.get "/logout" logout)
-    (.get "/posts/:id" middleware/restrict post-page)
-    (.get "/posts/:id/:file" middleware/restrict get-post-media)
-    (.post "/query" middleware/restrict middleware/edn-parser query)
-    (.post "/twilio" middleware/form-parser (middleware/twilio (production?)) create-post)))
+    (.get (get-sluggable-route "/posts/:id")
+          middleware/restrict
+          middleware/load-site!
+          middleware/forbid-site-members
+          post-page)
+    (.get (get-sluggable-route "/posts/:id/:file")
+          middleware/restrict
+          middleware/load-site!
+          middleware/forbid-site-members
+          get-post-media)
+    (.post "/query"
+           middleware/restrict
+           middleware/edn-parser
+           query)
+    (.post "/twilio"
+           middleware/form-parser
+           (middleware/twilio (production?))
+           create-post)))

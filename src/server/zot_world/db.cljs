@@ -84,6 +84,33 @@
       .toDate
       .toISOString))
 
+(defn site-with-membership
+  ([slug user-id] (site-with-membership nil slug user-id))
+  ([client slug user-id]
+   (println slug user-id)
+    (js/Promise.
+      (fn [res rej]
+        (-> (or client sql)
+            (.raw (str-sql
+                       "SELECT"
+                         "sv.*,"
+                         "("
+                           "SELECT"
+                             "id"
+                           "FROM members_view"
+                           "WHERE site_id = sv.id"
+                           "AND user_id = $2"
+                         ") IS NOT NULL AS is_member"
+                       "FROM sites_view sv"
+                       "WHERE sv.slug = $1"
+                       "LIMIT 1;")
+                  #js [slug user-id])
+            (.row
+              (fn [err row]
+                (if (some? err)
+                  (rej err)
+                  (res (js->clj (to-json row) :keywordize-keys true))))))))))
+
 (defn create-post [data cb]
   (tx
     (fn [client cb]
