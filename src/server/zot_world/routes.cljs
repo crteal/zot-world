@@ -114,8 +114,10 @@
         original-url (.. req -originalUrl)
         password  (.-password data)
         remember? (= (.-remember data) "on")
-        url (when (re-find #"^/[^/]" (.. req -query -url))
-              (.. req -query -url))]
+        query-url (.. req -query -url)
+        url (when (and (some? query-url)
+                       (re-find #"^/[^/]" query-url))
+              query-url)]
     (if (or (nil? email) (nil? password))
       (.redirect res original-url)
       (db/user-by-email-password
