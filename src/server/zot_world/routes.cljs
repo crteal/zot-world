@@ -312,7 +312,7 @@
           register-page)
     (.post "/register"
            middleware/form-parser
-           middleware/csrf
+           (middleware/csrf)
            register)
     (.get "/login"
           (middleware/csrf)
