@@ -200,6 +200,33 @@
        (.returning "*")
        (.row (row-handler cb)))))
 
+(defn create-membership
+  ([data cb]
+   (create-membership sql data cb))
+  ([client data cb]
+   (-> client
+       (.insert "members" (clj->js (conj data
+                                         {:created_at (now-timestamp)})))
+       (.returning "*")
+       (.row (row-handler cb)))))
+
+(defn create-user-and-membership [user membership]
+  (js/Promise.
+    (fn [res rej]
+      (tx (fn [client callback]
+            (create-user
+              client
+              user
+              (fn [{:keys [id] :as user}]
+                (create-membership
+                  client
+                  (merge membership {:user_id id})
+                  #(callback nil user)))))
+          (fn [_ result]
+            (if (some? result)
+              (res result)
+              (rej)))))))
+
 (defn update-post-likes
   ([post-id user-id cb]
    (update-post-likes sql post-id user-id cb))

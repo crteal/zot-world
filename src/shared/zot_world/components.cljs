@@ -120,7 +120,9 @@
              :beta_key {:label "Beta Key"
                         :placeholder "Beta key"
                         :required true
-                        :type "text"}}
+                        :type "text"}
+             :site_id {:type "hidden"
+                       :value (:site-id props)}}
             (when-some [csrf-token (:csrf-token props)]
               {:_csrf {:type "hidden"
                        :value csrf-token}})))

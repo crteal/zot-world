@@ -150,7 +150,7 @@
          {:limit 1
           :client %
           :where {:slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)}}))
-    (fn [{:keys [title]}]
+    (fn [{:keys [id title]}]
       (render!
         res
         (components/page
@@ -158,7 +158,8 @@
                    (dom/h1 #js {:className "f1 f-6-ns lh-solid measure center tc"} title)
                    (components/register {:action "/register"
                                          :csrf-token (.csrfToken req)
-                                         :method "post"}))})
+                                         :method "post"
+                                         :site-id id}))})
         {:title title}))))
 
 (defn register [req res]
@@ -167,12 +168,14 @@
         phone-number (.-phone_number data)
         email     (.-email data)
         password  (.-password data)
-        beta-key (.-beta_key data)]
+        beta-key (.-beta_key data)
+        site-id (.-site_id data)]
     (if (or (nil? username)
             (nil? phone-number)
             (nil? email)
             (nil? password)
-            (nil? beta-key))
+            (nil? beta-key)
+            (nil? site-id))
       (.redirect res "/register")
       (.verify jwt
         beta-key
@@ -187,11 +190,13 @@
               (fn [e hashed-password]
                 (if (some? e)
                   (.redirect res "/register")
-                  (db/create-user
-                    {:username username
-                     :email email
-                     :password hashed-password
-                     :phone_number phone-number}
+                  (.then
+                    (db/create-user-and-membership
+                      {:username username
+                       :email email
+                       :password hashed-password
+                       :phone_number phone-number}
+                      {:permission "read" :site_id site-id})
                     #(if (some? %)
                        (login req res)
                        (.redirect res "/register"))))))))))))
