@@ -87,7 +87,6 @@
 (defn site-with-membership
   ([slug user-id] (site-with-membership nil slug user-id))
   ([client slug user-id]
-   (println slug user-id)
     (js/Promise.
       (fn [res rej]
         (-> (or client sql)
