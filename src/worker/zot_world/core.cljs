@@ -89,22 +89,16 @@
                    {:limit 1
                     :client client
                     :where {:id (:site_id post)}})
-                 (db/query :users
-                   {:limit 1
-                    :client client
-                    :where author})])
-          (fn [[site author]]
-            (.then
-              (db/users-in
-                client
-                (disj (reduce
-                        (fn [m {:keys [author_id]}]
-                          (conj m author_id))
-                        #{}
-                        (:comments post))
-                      (:id author)))
-              (fn [participants]
-                {:site site :participants participants :author author}))))))
+                 (db/post-participants client (:id post))])
+          (fn [[site participants]]
+            (merge {:site site}
+                   (reduce
+                     (fn [m {:keys [id] :as participant}]
+                       (if (= id (:id author))
+                         (assoc m :author participant)
+                         (merge-with conj m {:participants participant})))
+                     {:participants []}
+                     participants))))))
     (fn [{:keys [author participants site]}]
       (.all js/Promise
         (clj->js

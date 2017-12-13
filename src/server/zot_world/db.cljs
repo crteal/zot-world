@@ -272,3 +272,41 @@
                               :where {:id post-id}})
                           callback))))
       cb))
+
+(defn post-participants
+  ([client post-id]
+   (js/Promise.
+     (fn [res rej]
+        (-> client
+            (.raw (str-sql
+                    "SELECT"
+                      "p.*,",
+                      "u.email"
+                    "FROM"
+                    "("
+                       "SELECT"
+                         "cv.author_id AS id,"
+                         "cv.author_username AS username"
+                       "FROM comments_view cv"
+                       "WHERE cv.post_id = $1"
+                       "UNION"
+                       "SELECT"
+                         "pv.author_id AS id,",
+                         "pv.author_username AS username"
+                       "FROM posts_view pv"
+                       "WHERE pv.id = $1"
+                       "UNION"
+                       "SELECT"
+                         "sv.owner_id AS id,"
+                         "sv.owner_username AS id"
+                       "FROM sites_view sv"  
+                       "WHERE sv.id IN (SELECT site_id FROM posts WHERE id = $1)"
+                    ") as p"
+                    "JOIN users u"
+                    "ON p.id = u.id")
+                  #js [post-id])
+            (.rows
+              (fn [err rows]
+                (if (some? err)
+                  (rej err)
+                  (res (js->clj (to-json rows) :keywordize-keys true))))))))))
