@@ -1,5 +1,6 @@
 (defproject zot-world "0.1.0-SNAPSHOT"
-  :min-lein-version "2.0.0"
+  :min-lein-version "2.7.1"
+
   :dependencies [[cljsjs/moment               "2.17.1-1"]
                  [cljsjs/react                "15.6.1-1"]
                  [cljsjs/react-dom            "15.6.1-1"]
@@ -15,10 +16,12 @@
                   :exclusions [cljsjs/react
                                cljsjs/react-dom
                                com.cognitect/transit-cljs]]]
-  :plugins [[lein-cljsbuild "1.1.7"]]
-  :clean-targets ^{:protect false} ["resources/js/out"
-                                    "resources/js/main.js"
-                                    "target"]
+
+  :plugins [[lein-figwheel "0.5.14"]
+            [lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]]
+
+  :source-paths ["src"]
+
   :cljsbuild {
     :builds {
       :client {:source-paths ["src/shared"
@@ -51,7 +54,14 @@
                           :target :nodejs}}}}
   :profiles {
     :dev {
-      :dependencies [[figwheel-sidecar "0.5.14"]]}
+      :dependencies [[binaryage/devtools "0.9.8"]
+                     [figwheel-sidecar "0.5.14"]
+                     [com.cemerick/piggieback "0.2.2"]]
+      :source-paths ["src" "dev"]
+      :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
+      :clean-targets ^{:protect false} ["resources/js/out"
+                                        "resources/js/main.js"
+                                        :target-path]}
     :production {
       :cljsbuild {
         :builds {
