@@ -5,7 +5,7 @@
                  [cljsjs/react                "15.6.1-1"]
                  [cljsjs/react-dom            "15.6.1-1"]
                  [cljsjs/react-dom-server     "15.6.1-1"]
-                 [cljsjs/twemoji              "2.3.0-0"]
+                 [cljsjs/twemoji              "2.4.0-0"]
                  [com.cognitect/transit-cljs  "0.8.243"]
                  [garden                      "1.3.3"]
                  [markdown-clj                "1.0.1"
