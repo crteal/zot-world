@@ -323,6 +323,74 @@
                                        :until (:created_at post)}}))))
         25))))
 
+(defn calendar-month-day [events year month day]
+  (dom/div #js {:className "tc pa2"}
+    (when-not (string? day)
+      (if (contains? events (inc day))
+        (dom/a #js {:className "link dim"
+                    :href (str "/?year=" year "&month=" month "&day=" (inc day))}
+          (inc day))
+        (inc day)))))
+
+(defui CalendarMonth
+  Object
+  (render [this]
+    (let [{:keys [events month year locale] :or {locale "en"}} (om/props this)
+          date (js/moment.utc (js/Date. year month))]
+      (dom/section #js {:className "calendar-month center-ns mw6-ns hidden mv4 mh3 ba b--near-white"}
+        (dom/h2 #js {:className "tc"}
+          (dom/a #js {:className "link dim"
+                      :href (str "/?year=" year "&month=" month)}
+            (.format date "MMMM")))
+        (apply dom/section #js {:className "calendar mb3"}
+               (concat (map #(dom/div #js {:className "b tc pa2"} %)
+                            (-> (js/moment)
+                                (.locale locale)
+                                .localeData
+                                .weekdaysMin))
+                (map (partial calendar-month-day events year month)
+                     (concat (repeat (.day date) "")
+                             (range (.daysInMonth date))))))))))
+
+(def calendar-month (om/factory CalendarMonth))
+
+(defui CalendarYear
+  Object
+  (render [this]
+    (let [{:keys [events year] :as props} (om/props this)
+          date (js/moment.utc)
+          start-month (or (apply min (keys events)) 0)
+          end-month (if (= year (.year date))
+                      (inc (.month date))
+                      12)]
+      (dom/section #js {:className "calendar-year"}
+        (dom/h2 #js {:className "tc"} year)
+        (apply dom/section #js {:className "calendar-months"}
+               (map #(calendar-month (merge props {:events (get events %)
+                                                   :month %}))
+                    (reverse (range start-month end-month))))))))
+
+(def calendar-year (om/factory CalendarYear))
+
+(defui CalendarListItem
+  Object
+  (render [this]
+    (let [{:keys [year]} (om/props this)]
+      (dom/li #js {:className "lh-copy"}
+        (dom/a #js {:className "link dim"
+                    :href (str "calendar/" year)} year)))))
+
+(def calendar-list-item (om/factory CalendarListItem))
+
+(defui CalendarList
+  Object
+  (render [this]
+    (let [{:keys [years]} (om/props this)]
+      (apply dom/ul #js {:className "list center-ns mw6-ns hidden mv4 mh3"}
+        (map calendar-list-item years)))))
+
+(def calendar-list (om/factory CalendarList))
+
 (defui Posts
   static om/IQueryParams
   (params [this]
@@ -394,17 +462,22 @@
               body
               scripts)))))))
 
+(defn app-page-layout
+  ([title c] (app-page-layout title c nil))
+  ([title c scripts]
+   (page {:head (dom/link #js {:href "/css/styles.css"
+                               :rel "stylesheet"})
+          :body (dom/section nil
+                  (dom/header #js {:className "bg-white fixed w-100 ph3 pv3"
+                                   :style #js {:zIndex 1}}
+                  (dom/h1 #js {:className "f1 f-4-ns lh-solid center tc mv0"}
+                    (dom/a #js {:className "link dim mid-gray"
+                                :href "/"}
+                      title)))
+                  (dom/section #js {:className "pt5"
+                                    :id "app"})
+                  c)
+         :scripts scripts})))
+
 (defn app-page [title c]
-  (page {:head (dom/link #js {:href "/css/styles.css"
-                              :rel "stylesheet"})
-         :body (dom/section nil
-                 (dom/header #js {:className "bg-white fixed w-100 ph3 pv3"
-                                  :style #js {:zIndex 1}}
-                   (dom/h1 #js {:className "f1 f-4-ns lh-solid center tc mv0"}
-                     (dom/a #js {:className "link dim mid-gray"
-                                 :href "/"}
-                       title)))
-                 (dom/section #js {:className "pt5"
-                                   :id "app"})
-                 c)
-         :scripts (dom/script #js {:src "/js/main.js"})}))
+  (app-page-layout title c (dom/script #js {:src "/js/main.js"})))

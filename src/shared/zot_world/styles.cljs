@@ -6,7 +6,10 @@
                           :margin "0 .05em 0 .1em"
                           :vertical-align "-0.1em"}])
 
-(def theme [twemoji])
+(def calendar [:.calendar {:display "grid"
+                           :grid-template-columns "repeat(7, 1fr)"}])
+
+(def theme [twemoji calendar])
 
 (defn css
   ([] (css nil))

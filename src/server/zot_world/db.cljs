@@ -66,7 +66,23 @@
 
 (def query (make-query-fn table-query-configurations))
 
-(defn posts-until [{:keys [until] :as config}]
+(defn site-years [client site-id]
+  (js/Promise.
+    (fn [res rej]
+      (-> (or client sql)
+          (.raw (str-sql
+                       "SELECT DISTINCT"
+                         "date_part('year', created_at) AS year"
+                       "FROM posts_view"
+                       "WHERE site_id = $1")
+                  #js [site-id])
+            (.rows
+              (fn [err rows]
+                (if (some? err)
+                  (rej err)
+                  (res (js->clj (to-json rows) :keywordize-keys true)))))))))
+
+(defn posts-until [{:keys [before until] :as config}]
   (query
     :posts
     (merge
@@ -76,7 +92,11 @@
                   (.and (clj->js (:where config))
                         (-> sql
                             .-sql
-                            (.lt "created_at" until))))})))
+                            (.lt "created_at" until))
+                        (when (some? before)
+                          (-> sql
+                              .-sql
+                              (.gt "created_at" before)))))})))
 
 (defn now-timestamp []
   (-> js/moment

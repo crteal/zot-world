@@ -72,13 +72,26 @@
 ; routes
 (def index
   (site-page-renderer
-    (fn [_ client site]
-      (.then
-        (db/query :posts
-          {:limit *default-post-page-size*
-           :client client
-           :where {:site_id (:id site)}})
-        #(merge {:site site} {:posts %})))))
+    (fn [req client site]
+      (let [year (js/parseInt (.. req -query -year))
+            month (js/parseInt (.. req -query -month))
+            day (js/parseInt (.. req -query -day))]
+        (.then
+          (if-not (js/isNaN year)
+            (let [date (js/moment.utc (js/Date. year
+                                                (when-not (js/isNaN month) month)
+                                                (when-not (js/isNaN day) day)))]
+              (db/posts-until {:until (.format (.add date 1 (if-not (js/isNaN day)
+                                                              "days"
+                                                              "months") "YYYY-MM-DD"))
+                               :client client
+                               :limit *default-post-page-size*
+                               :where {:site_id (:id site)}}))
+            (db/query :posts
+              {:limit *default-post-page-size*
+               :client client
+               :where {:site_id (:id site)}}))
+          #(merge {:site site} {:posts %}))))))
 
 (def post-page
   (site-page-renderer
@@ -90,6 +103,67 @@
            :where {:id (.. req -params -id)
                    :site_id (:id site)}})
         #(merge {:site site} {:posts [%]})))))
+
+(defn calendar-page [req res]
+  (.then
+      (db/tx
+        (fn [client]
+          (.then
+            (db/query :sites
+              {:limit 1
+               :client client
+               :where {:slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)}})
+            (fn [site]
+              (.then
+                (db/site-years client (:id site))
+                (fn [years]
+                  {:site site :years years}))))))
+      (fn [{:keys [site years]}]
+        (let [{:keys [title]} site]
+          (render!
+            res
+            (components/app-page-layout
+              title
+              (components/calendar-list
+                {:years years}))
+          {:title title})))))
+
+(defn calendar-year-page [req res]
+  (let [now (js/moment.utc)
+        year (or (js/parseInt (.. req -params -year))
+                 (.year now))]
+    (.then
+      (db/tx
+        (fn [client]
+          (.then
+            (db/query :sites
+              {:limit 1
+               :client client
+               :where {:slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)}})
+            (fn [site]
+              (.then
+                (db/posts-until {:client client
+                                 :before (str (dec year) "-12-31")
+                                 :until (str (inc year) "-01-01")
+                                 :where {:site_id (:id site)}})
+                (fn [posts]
+                  {:site site :posts posts}))))))
+      (fn [{:keys [site posts]}]
+        (let [{:keys [title]} site]
+          (render!
+            res
+            (components/app-page-layout
+              title
+              (components/calendar-year
+                {:year year
+                 :events (reduce
+                           (fn [memo post]
+                             (let [created-at (js/moment.utc (:created_at post))]
+                               (merge-with clojure.set/union memo
+                                           {(.month created-at) #{(.date created-at)}})))
+                           {}
+                           posts)}))
+          {:title title}))))))
 
 (defn login-page [req res]
   (.then
@@ -337,6 +411,16 @@
           middleware/load-site!
           middleware/forbid-site-members
           get-post-media)
+    (.get (get-sluggable-route "/calendar")
+          middleware/restrict
+          middleware/load-site!
+          middleware/forbid-site-members
+          calendar-page)
+    (.get (get-sluggable-route "/calendar/:year")
+          middleware/restrict
+          middleware/load-site!
+          middleware/forbid-site-members
+          calendar-year-page)
     (.post "/query"
            middleware/restrict
            middleware/edn-parser
