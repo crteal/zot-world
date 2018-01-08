@@ -8,7 +8,7 @@
                  [cljsjs/twemoji              "2.4.0-0"]
                  [com.cognitect/transit-cljs  "0.8.243"]
                  [garden                      "1.3.3"]
-                 [markdown-clj                "1.0.1"
+                 [markdown-clj                "1.0.2"
                   :exclusions [org.clojure/clojure]]
                  [org.clojure/clojure         "1.9.0-alpha19"]
                  [org.clojure/clojurescript   "1.9.671"]
