@@ -71,6 +71,7 @@ pom.xml.asc
 .lein-plugins/
 .lein-failures
 .nrepl-port
+.cljs_rhino_repl
 
 # Figwheel
 figwheel_server.log
