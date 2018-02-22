@@ -20,9 +20,10 @@
 ;; by default `compression` will not work for EDN
 (defn compression-filter
   [req res]
-  (let [content-type (.getHeader res "Content-Type")]
+  (if-some [content-type (.getHeader res "Content-Type")]
     (or (some? (re-find #"application/edn" content-type))
-        (.filter compression req res))))
+        (.filter compression req res))
+    (.filter compression req res)))
 
 ;; app gets redefined on reload
 (def app (-> (express)
