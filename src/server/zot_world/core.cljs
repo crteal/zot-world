@@ -18,9 +18,16 @@
 (defonce production? (= (.. js/process -env -NODE_ENV)
                         "production"))
 
+;; by default `compression` will not work for EDN
+(defn compression-filter
+  [req res]
+  (let [content-type (.getHeader res "Content-Type")]
+    (or (some? (re-find #"application/edn" content-type))
+        (.filter compression req res))))
+
 ;; app gets redefined on reload
 (def app (-> (express)
-             (.use (compression))
+             (.use (compression #js {:filter compression-filter}))
              (.use (helmet))
              (.use (morgan (if production?
                              "combined"
