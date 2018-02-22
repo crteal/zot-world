@@ -13,7 +13,6 @@
 (defonce morgan (nodejs/require "morgan"))
 (defonce session (nodejs/require "express-session"))
 (defonce RedisStore (connect-redis session))
-(defonce static-dir (nodejs/require "serve-static"))
 
 (defonce production? (= (.. js/process -env -NODE_ENV)
                         "production"))
@@ -32,7 +31,7 @@
              (.use (morgan (if production?
                              "combined"
                              "dev")))
-             (.use (static-dir "resources"))
+             (.use (.static express "resources"))
              (.use (session (clj->js
                               {:cookie {:httpOnly true
                                         :maxAge 3600000}

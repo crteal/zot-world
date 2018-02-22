@@ -19,7 +19,6 @@
     "morgan": "1.9.0",
     "pg-bricks": "0.6.0",
     "request": "2.83.0",
-    "serve-static": "1.13.1",
     "source-map-support": "0.5.3",
     "twilio": "3.11.2",
     "ws": "4.0.0"
