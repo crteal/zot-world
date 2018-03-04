@@ -5,7 +5,7 @@
   "main": "target/server/main.js",
   "dependencies": {
     "amqplib": "0.5.2",
-    "aws-sdk": "2.201.0",
+    "aws-sdk": "2.205.0",
     "bcrypt": "1.0.3",
     "body-parser": "1.18.2",
     "compression": "1.7.2",
