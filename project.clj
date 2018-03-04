@@ -2,9 +2,9 @@
   :min-lein-version "2.7.1"
 
   :dependencies [[cljsjs/moment               "2.17.1-1"]
-                 [cljsjs/react                "15.6.1-1"]
-                 [cljsjs/react-dom            "15.6.1-1"]
-                 [cljsjs/react-dom-server     "15.6.1-1"]
+                 [cljsjs/react                "16.2.0-3"]
+                 [cljsjs/react-dom            "16.2.0-3"]
+                 [cljsjs/react-dom-server     "16.2.0-3"]
                  [cljsjs/twemoji              "2.4.0-0"]
                  [com.cognitect/transit-cljs  "0.8.243"]
                  [garden                      "1.3.3"]
@@ -12,7 +12,7 @@
                   :exclusions [org.clojure/clojure]]
                  [org.clojure/clojure         "1.9.0-alpha19"]
                  [org.clojure/clojurescript   "1.9.671"]
-                 [org.omcljs/om               "1.0.0-beta1"
+                 [org.omcljs/om               "1.0.0-beta2"
                   :exclusions [cljsjs/react
                                cljsjs/react-dom
                                com.cognitect/transit-cljs]]]
