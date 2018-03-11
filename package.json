@@ -21,7 +21,7 @@
     "request": "2.83.0",
     "source-map-support": "0.5.3",
     "twilio": "3.13.0",
-    "ws": "4.1.0"
+    "ws": "5.0.0"
   },
   "engines": {
     "node": "9.8.0"
