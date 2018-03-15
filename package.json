@@ -2,6 +2,7 @@
   "name": "zot-world",
   "version": "1.0.0",
   "description": "",
+  "private": true,
   "main": "target/server/main.js",
   "dependencies": {
     "amqplib": "0.5.2",
