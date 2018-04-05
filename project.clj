@@ -54,7 +54,7 @@
                           :target :nodejs}}}}
   :profiles {
     :dev {
-      :dependencies [[binaryage/devtools "0.9.9"]
+      :dependencies [[binaryage/devtools "0.9.10"]
                      [figwheel-sidecar "0.5.14"]
                      [com.cemerick/piggieback "0.2.2"]]
       :source-paths ["src" "dev"]
