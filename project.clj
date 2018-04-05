@@ -6,7 +6,7 @@
                  [cljsjs/react-dom            "16.3.0-1"]
                  [cljsjs/react-dom-server     "16.3.0-1"]
                  [cljsjs/twemoji              "2.4.0-0"]
-                 [com.cognitect/transit-cljs  "0.8.243"]
+                 [com.cognitect/transit-cljs  "0.8.256"]
                  [garden                      "1.3.4"]
                  [markdown-clj                "1.0.2"
                   :exclusions [org.clojure/clojure]]
