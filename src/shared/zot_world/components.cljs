@@ -173,8 +173,11 @@
             (ago {:date (:created_at props)})))))))
 
 (defn post-comment [c]
-  (let [editor (om/react-ref c :editor)
-        el (dom/node editor)
+  ; TODO react 16 breaks string refs, this is an Om bug
+  (let [c-el (dom/node c)
+        ; editor (om/react-ref c :editor)
+        ; el (dom/node editor)
+        el (.querySelector c-el "textarea")
         cmt {:body (.-value el)
              :post-id (:id (om/props c))}]
     (when-not (empty? (:body cmt))
@@ -293,7 +296,7 @@
             (dom/section #js {:className "pv2"}
               (dom/textarea #js {:autoFocus true
                                  :className "w-100 mb2"
-                                 :ref :editor
+                                 ; :ref :editor
                                  :style #js {:minHeight "4rem"
                                              :resize "none"}})
               (dom/input #js {:className "b ph3 pv2 input-reset ba b--black bg-white grow pointer f6 dib"
