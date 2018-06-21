@@ -2,9 +2,9 @@
   :min-lein-version "2.7.1"
 
   :dependencies [[cljsjs/moment               "2.22.0-0"]
-                 [cljsjs/react                "16.3.2-0"]
-                 [cljsjs/react-dom            "16.3.2-0"]
-                 [cljsjs/react-dom-server     "16.3.2-0"]
+                 [cljsjs/react                "16.4.0-0"]
+                 [cljsjs/react-dom            "16.4.0-0"]
+                 [cljsjs/react-dom-server     "16.4.0-0"]
                  [cljsjs/twemoji              "2.4.0-0"]
                  [com.cognitect/transit-cljs  "0.8.256"]
                  [garden                      "1.3.5"]
