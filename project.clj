@@ -12,7 +12,7 @@
                   :exclusions [org.clojure/clojure]]
                  [org.clojure/clojure         "1.9.0-alpha19"]
                  [org.clojure/clojurescript   "1.9.671"]
-                 [org.omcljs/om               "1.0.0-beta3"
+                 [org.omcljs/om               "1.0.0-beta4"
                   :exclusions [cljsjs/react
                                cljsjs/react-dom
                                com.cognitect/transit-cljs]]]
