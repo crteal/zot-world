@@ -10,8 +10,8 @@
                  [garden                      "1.3.5"]
                  [markdown-clj                "1.0.2"
                   :exclusions [org.clojure/clojure]]
-                 [org.clojure/clojure         "1.9.0-alpha19"]
-                 [org.clojure/clojurescript   "1.9.671"]
+                 [org.clojure/clojure         "1.9.0"]
+                 [org.clojure/clojurescript   "1.10.339"]
                  [org.omcljs/om               "1.0.0-beta4"
                   :exclusions [cljsjs/react
                                cljsjs/react-dom
@@ -56,9 +56,9 @@
     :dev {
       :dependencies [[binaryage/devtools "0.9.10"]
                      [figwheel-sidecar "0.5.16"]
-                     [com.cemerick/piggieback "0.2.2"]]
+                     [cider/piggieback "0.3.8"]]
       :source-paths ["src" "dev"]
-      :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
+      :repl-options {:nrepl-middleware [cider.piggieback/wrap-cljs-repl]}
       :clean-targets ^{:protect false} ["resources/js/out"
                                         "resources/js/main.js"
                                         :target-path]}
