@@ -21,7 +21,7 @@
     "pg-bricks": "0.6.0",
     "request": "2.88.0",
     "source-map-support": "0.5.8",
-    "twilio": "3.18.0",
+    "twilio": "3.19.1",
     "ws": "5.2.2"
   },
   "engines": {
