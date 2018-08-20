@@ -2,7 +2,7 @@
   (:require [cljsjs.moment]
             [cljsjs.twemoji]
             [clojure.string :as str]
-            [clojure.browser.event :as event]
+            [hom.core :refer-macros [component]]
             [goog.events :as gevents]
             [goog.functions]
             [goog.object :as gobj]
@@ -82,7 +82,7 @@
             {:email {:placeholder "Email address"
                      :required true
                      :type "email"}
-             :password {:minlength 6
+             :password {:minLength 6
                         :placeholder "Password"
                         :required true
                         :type "password"}
@@ -139,9 +139,10 @@
   (render [this]
     (let [props (om/props this)
           date (-> js/moment (.utc (:date props)))]
-      (dom/time #js {:dateTime (-> date .format)
-                     :title (-> date (.format "LLL"))}
-                (-> date .fromNow)))))
+      (component
+        [:time {:dateTime (-> date .format)
+                :title (-> date (.format "LLL"))}
+         (-> date .fromNow)]))))
 
 (def ago (om/factory Ago))
 
@@ -149,7 +150,8 @@
   Object
   (render [this]
     (let [{:keys [username] :as props} (om/props this)]
-      (dom/strong #js {:dangerouslySetInnerHTML #js {:__html (emojify username)}}))))
+      (component
+        [:strong {:dangerouslySetInnerHTML {:__html (emojify username)}}]))))
 
 (def username (om/factory Username))
 
@@ -159,18 +161,16 @@
     '[:id :auther_username :body :likes :created_at])
   Object
   (render [this]
-    (let [{:keys [body] :as props} (om/props this)
-          created-at (-> js/moment (.utc (:created_at props)))]
-      (dom/section #js {:className "pv1"}
-        (dom/p #js {:className "f6 f5-ns lh-copy pv1 ma0"
-                    :dangerouslySetInnerHTML #js {:__html (-> body
-                                                              md->html
-                                                              emojify)}})
-        (dom/ul #js {:className "list ph0 pv0 ma0 f6"}
+    (let [{:keys [body] :as props} (om/props this)]
+      (component
+        [:section.pv1
+         [:p.f6.f5-ns.lh-copy.pv1.ma0
+          {:dangerouslySetInnerHTML {:__html (-> body md->html emojify)}}]
+         [:ul.list.ph0.pv0.ma0.f6
           (dom/li #js {:className "dib mr3 gray"}
             (username {:username (:author_username props)})
             " "
-            (ago {:date (:created_at props)})))))))
+            (ago {:date (:created_at props)}))]]))))
 
 (defn post-comment [c]
   ; TODO react 16 breaks string refs, this is an Om bug
@@ -190,16 +190,16 @@
     content-type))
 
 (defn make-video [{:keys [id content-type post-id url]}]
-  (dom/video #js {:autoPlay true
-                  :controls true
-                  :loop true
-                  :muted true
-                  :key id
-                  :className "db mv0 w-100"}
-    (dom/source #js {:src (str "/posts/" post-id "/" id ".webm")
-                     :type "video/webm"})
-    (dom/source #js {:src url
-                     :type content-type})))
+  (component
+    [:video.db.mv0.w-100 {:autoPlay true
+                          :controls true
+                          :loop true
+                          :muted true
+                          :key id}
+     [:source {:src (str "/posts/" post-id "/" id ".webm")
+               :type "video/webm"}
+      [:source {:src url
+                :type content-type}]]]))
 
 (defmethod make-media "video/3gpp" [options]
   (make-video options))
@@ -235,14 +235,15 @@
     (let [{:keys [data id] :as props} (om/props this)
           ;; TODO push this complexity to the server, normalize posts with types
           num-media (js/parseInt (get data :NumMedia))]
-      (apply dom/section #js {:name "post-media"}
-        (map #(make-media
+      (component
+        [:section {:name "post-media"}
+         (map #(make-media
                 {:id %
                  :post-id id
                  :component this
                  :content-type (get data (keyword (str "MediaContentType" %)))
                  :url (get data (keyword (str "MediaUrl" %)))})
-           (range num-media))))))
+              (range num-media))]))))
 
 (def media (om/factory Media))
 
@@ -256,7 +257,6 @@
   Object
   (render [this]
     (let [{:keys [comments data likes id] :as props} (om/props this)
-          created-at (-> js/moment (.utc (:created_at props)))
           state (om/get-state this)]
       (dom/article #js {:className "center-ns mw6-ns hidden mv4 mh3 ba b--near-white"
                         :name "post"}
@@ -340,20 +340,19 @@
   (render [this]
     (let [{:keys [events month year locale] :or {locale "en"}} (om/props this)
           date (js/moment.utc (js/Date. year month))]
-      (dom/section #js {:className "calendar-month center-ns mw6-ns hidden mv4 mh3 ba b--near-white"}
-        (dom/h2 #js {:className "tc"}
-          (dom/a #js {:className "link dim"
-                      :href (str "/?year=" year "&month=" month)}
-            (.format date "MMMM")))
-        (apply dom/section #js {:className "calendar mb3"}
-               (concat (map #(dom/div #js {:className "b tc pa2"} %)
-                            (-> (js/moment)
-                                (.locale locale)
-                                .localeData
-                                .weekdaysMin))
-                (map (partial calendar-month-day events year month)
-                     (concat (repeat (.day date) "")
-                             (range (.daysInMonth date))))))))))
+      (component
+        [:section.calendar-month.center-ns.mw6-ns.hidden.mv4.mh3.ba.b--near-white
+         [:h2.tc
+          [:a.link.dim {:href (str "/?year=" year "&month=" month)} (.format date "MMMM")]]
+         [:section.calendar.mb3
+          (concat (map #(component [:div.b.tc.pa2 %])
+                       (-> (js/moment)
+                           (.locale locale)
+                           .localeData
+                           .weekdaysMin))
+                  (map (partial calendar-month-day events year month)
+                       (concat (repeat (.day date) "")
+                               (range (.daysInMonth date)))))]]))))
 
 (def calendar-month (om/factory CalendarMonth))
 
@@ -366,12 +365,13 @@
           end-month (if (= year (.year date))
                       (inc (.month date))
                       12)]
-      (dom/section #js {:className "calendar-year"}
-        (dom/h2 #js {:className "tc"} year)
-        (apply dom/section #js {:className "calendar-months"}
-               (map #(calendar-month (merge props {:events (get events %)
-                                                   :month %}))
-                    (reverse (range start-month end-month))))))))
+      (component
+        [:section.calendar-year
+         [:h2.tc year]
+         [:section.calendar-months
+          (map #(calendar-month (merge props {:events (get events %)
+                                              :month %}))
+               (reverse (range start-month end-month)))]]))))
 
 (def calendar-year (om/factory CalendarYear))
 
@@ -379,9 +379,9 @@
   Object
   (render [this]
     (let [{:keys [year]} (om/props this)]
-      (dom/li #js {:className "lh-copy"}
-        (dom/a #js {:className "link dim"
-                    :href (str "calendar/" year)} year)))))
+      (component
+        [:li.lh-copy
+         [:a.link.dim {:href (str "calendar/" year)} year]]))))
 
 (def calendar-list-item (om/factory CalendarListItem))
 
@@ -389,8 +389,9 @@
   Object
   (render [this]
     (let [{:keys [years]} (om/props this)]
-      (apply dom/ul #js {:className "list center-ns mw6-ns hidden mv4 mh3"}
-        (map calendar-list-item years)))))
+      (component
+        [:ul.list.center-ns.mw6-ns.hidden.mv4.mh3
+         (map calendar-list-item years)]))))
 
 (def calendar-list (om/factory CalendarList))
 
@@ -416,18 +417,19 @@
           js/window goog.events.EventType.SCROLL
           (make-posts-scroll-handler this)))))
   (render [this]
-    (let [{:keys [posts post-page-size]} (om/props this)]
-      (apply dom/section #js {:name "posts"}
-        (map post posts)))))
+    (let [{:keys [posts]} (om/props this)]
+      (component
+        [:section {:name "posts"} (map post posts)]))))
 
 (def posts (om/factory Posts))
 
 (defui Data
   Object
   (render [this]
-
-    (dom/script #js {:type "application/edn"
-                     :dangerouslySetInnerHTML #js {:__html (pr-str (om/props this))}})))
+    (let [edn (pr-str (om/props this))]
+      (component
+        [:script {:type "application/edn"
+                  :dangerouslySetInnerHTML {:__html edn}}]))))
 
 (def data (om/factory Data))
 
