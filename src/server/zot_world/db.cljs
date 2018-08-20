@@ -262,6 +262,19 @@
              #js [post-id user-id (now-timestamp)])
        (.run cb))))
 
+; TODO allow site admins to delete in addition to post authors
+(defn delete-post [post-id user-id cb]
+  (tx (fn [client callback]
+        (-> client
+            (.raw (str-sql
+                    "UPDATE"
+                      "posts"
+                    "SET is_deleted = TRUE"
+                    "WHERE id = $1 AND author_id = $2;")
+                  #js [post-id user-id])
+            (.run callback)))
+      cb))
+
 (defn toggle-post-engagement [post-id user-id cb]
   (tx (fn [client callback]
         (update-post-likes

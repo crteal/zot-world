@@ -256,6 +256,7 @@
   Object
   (render [this]
     (let [{:keys [comments data likes id] :as props} (om/props this)
+          {:keys [user]} (om/shared this)
           created-at (-> js/moment (.utc (:created_at props)))
           state (om/get-state this)]
       (dom/article #js {:className "center-ns mw6-ns hidden mv4 mh3 ba b--near-white"
@@ -266,45 +267,57 @@
                       :dangerouslySetInnerHTML #js {:__html (-> (:Body data)
                                                                 md->html
                                                                 emojify)}}))
-        (dom/ul #js {:className "list ph2 pv3 ma0 f6 bg-near-white"}
-          (dom/li #js {:className "grow dib mr3 pointer"
-                       :title (when-not (empty? likes)
-                                (str "Liked by: " (str/join ", " (map :username likes))))}
-            (dom/button #js {:className "pa0 bw0 bg-transparent mid-gray"
-                             :dangerouslySetInnerHTML #js {:__html (emojify (str "😍 " (count likes)))}
-                             :onClick (goog.functions.debounce
-                                        #(om/transact!
-                                           this
-                                           `[(post/applause ~(select-keys props [:id]))])
-                                        250)
-                             :type "button"}))
-          (dom/li #js {:className "grow dib mr3 pointer"}
-            (dom/button #js {:className "pa0 bw0 bg-transparent mid-gray"
-                             :dangerouslySetInnerHTML #js {:__html (emojify (str "💬 " (count comments)))}
-                             :name "post-conversation"
-                             :onClick #(om/set-state! this {:expanded (not (:expanded state))})
-                             :type "button"}))
-          (dom/li #js {:className "dib mr3 gray"}
-            "posted by "
-            (username {:username (:author_username props)})
-            " "
-            (ago {:date (:created_at props)})))
-        (when (:expanded state)
-          (dom/section #js {:className "pb3 ph2 bg-near-white"}
-            (apply dom/section nil
-              (map #((om/factory Comment {:keyfn :id}) %) comments))
-            (dom/section #js {:className "pv2"}
-              (dom/textarea #js {:autoFocus true
-                                 :className "w-100 mb2"
-                                 ; :ref :editor
-                                 :style #js {:minHeight "4rem"
-                                             :resize "none"}})
-              (dom/input #js {:className "b ph3 pv2 input-reset ba b--black bg-white grow pointer f6 dib"
+        (dom/section #js {:className "ph2 pv1 ma0 f6 bg-near-white"}
+          (dom/ul #js {:className "list pl0"}
+            (when (= (:id user) (:author_id props))
+              (dom/li #js {:className "fr grow dib pointer"}
+                (dom/button #js {:className "pa0 bw0 bg-transparent mid-gray"
+                                 :dangerouslySetInnerHTML #js {:__html (emojify "🗑️")}
+                                 :title "Delete this post"
+                                 :onClick (goog.functions.debounce
+                                            #(om/transact!
+                                               this
+                                               `[(post/delete ~(select-keys props [:id]))])
+                                            200)})))
+            (dom/li #js {:className "grow dib mr3 pointer"
+                         :title (when-not (empty? likes)
+                                  (str "Liked by: " (str/join ", " (map :username likes))))}
+             (dom/button #js {:className "pa0 bw0 bg-transparent mid-gray"
+                              :dangerouslySetInnerHTML #js {:__html (emojify (str "😍 " (count likes)))}
                               :onClick (goog.functions.debounce
-                                         #(post-comment this)
+                                         #(om/transact!
+                                            this
+                                            `[(post/applause ~(select-keys props [:id]))])
                                          250)
-                              :type "submit"
-                              :value "Post a comment"}))))))))
+                              :type "button"}))
+           (dom/li #js {:className "grow dib mr3 pointer"}
+             (dom/button #js {:className "pa0 bw0 bg-transparent mid-gray"
+                              :dangerouslySetInnerHTML #js {:__html (emojify (str "💬 " (count comments)))}
+                              :name "post-conversation"
+                              :onClick #(om/set-state! this {:expanded (not (:expanded state))})
+                              :type "button"})))
+          (when (:expanded state)
+            (dom/section #js {:className "pv1"}
+              (apply dom/section nil
+                (map #((om/factory Comment {:keyfn :id}) %) comments))
+              (dom/section #js {:className "pv2"}
+                (dom/textarea #js {:autoFocus true
+                                   :className "w-100 mb2"
+                                   ; :ref :editor
+                                   :style #js {:minHeight "4rem"
+                                               :resize "none"}})
+                (dom/input #js {:className "b ph3 pv2 input-reset ba b--black bg-white grow pointer f6 dib"
+                                :onClick (goog.functions.debounce
+                                           #(post-comment this)
+                                           250)
+                                :type "submit"
+                                :value "Post a comment"}))))
+          (dom/ul #js {:className "list pl0"}
+           (dom/li #js {:className "dib mr3 gray"}
+             "posted by "
+             (username {:username (:author_username props)})
+             " "
+             (ago {:date (:created_at props)}))))))))
 
 (def post (om/factory Post {:keyfn :id}))
 
@@ -401,7 +414,7 @@
      :until nil})
   static om/IQuery
   (query [_]
-    `[({:posts ~(om/get-query Post)} ~'{:site-id ?site-id :until ?until}) :post-page-size])
+    `[:user ({:posts ~(om/get-query Post)} ~'{:site-id ?site-id :until ?until}) :post-page-size])
   Object
   (componentDidMount [this]
     (let [{:keys [posts post-page-size]} (om/props this)]
@@ -416,7 +429,7 @@
           js/window goog.events.EventType.SCROLL
           (make-posts-scroll-handler this)))))
   (render [this]
-    (let [{:keys [posts post-page-size]} (om/props this)]
+    (let [{:keys [posts post-page-size user]} (om/props this)]
       (apply dom/section #js {:name "posts"}
         (map post posts)))))
 

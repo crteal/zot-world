@@ -29,7 +29,13 @@
   [{:keys [state ast] :as env} key {:keys [until]}]
   (let [st @state]
     (merge
-      {:value (into [] (map #(get-in st %)) (get st key))}
+      {:value (reduce
+                (fn [memo query]
+                  (if-let [post (get-in st query)]
+                    (conj memo post)
+                    memo))
+                []
+                (get st key))}
       (when-not (nil? until)
         {:remote ast}))))
 
@@ -39,9 +45,17 @@
   [env key params]
   {:remote true})
 
+(defmethod mutate 'post/delete
+  [{:keys [state]} _ {:keys [id]}]
+  {:remote true
+   :action
+   (fn []
+     (swap! state update-in [:posts/by-id] dissoc id))})
+
 (def reconciler
   (om/reconciler
     {:state app-state
+     :shared (select-keys app-state [:user])
      :merge (fn [reconciler state novelty query]
               {:keys (keys novelty)
                :next (merge-with (fn [l r]

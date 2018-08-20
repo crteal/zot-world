@@ -332,6 +332,15 @@
 
 (defmulti mutate om/dispatch)
 
+(defmethod mutate 'post/delete
+  [{:keys [cb user]} key {:keys [id]}]
+  {:action
+   (fn []
+     (db/delete-post
+       id
+       (:id user)
+       #(cb `{:posts/by-id {~id nil}})))})
+
 (defmethod mutate 'post/applause
   [{:keys [cb user]} key {:keys [id]}]
   {:action
