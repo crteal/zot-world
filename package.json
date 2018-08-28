@@ -20,7 +20,7 @@
     "morgan": "1.9.0",
     "pg-bricks": "0.6.0",
     "request": "2.88.0",
-    "source-map-support": "0.5.8",
+    "source-map-support": "0.5.9",
     "twilio": "3.19.1",
     "ws": "6.0.0"
   },
