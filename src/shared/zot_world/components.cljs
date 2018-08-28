@@ -197,9 +197,9 @@
                           :muted true
                           :key id}
      [:source {:src (str "/posts/" post-id "/" id ".webm")
-               :type "video/webm"}
-      [:source {:src url
-                :type content-type}]]]))
+               :type "video/webm"}]
+     [:source {:src url
+               :type content-type}]]))
 
 (defmethod make-media "video/3gpp" [options]
   (make-video options))
