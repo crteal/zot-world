@@ -4,7 +4,8 @@
     [cljs.reader :as reader]
     [zot-world.server.db :as db]
     [zot-world.server.email :as email]
-    [zot-world.server.queue :as queue]))
+    [zot-world.server.queue :as queue]
+    [zot-world.server.utils :as utils :refer [get-env]]))
 
 (nodejs/enable-util-print!)
 
@@ -18,10 +19,10 @@
 
 (defn upload-stream [post-id k content-type cb]
   (let [stream (PassThrough.)]
-    (-> (s3. #js {:accessKeyId (.. js/process -env -AWS_ACCESS_KEY)
-                  :secretAccessKey (.. js/process -env -AWS_SECRET_ACCESS_KEY)})
+    (-> (s3. #js {:accessKeyId (get-env "AWS_ACCESS_KEY")
+                  :secretAccessKey (get-env "AWS_SECRET_ACCESS_KEY")})
         (.upload (clj->js {:Body stream
-                           :Bucket (.. js/process -env -AWS_S3_MEDIA_BUCKET)
+                           :Bucket (get-env "AWS_S3_MEDIA_BUCKET")
                            :ContentType content-type
                            :Key (str post-id "/" k)})
                  cb))
@@ -77,7 +78,7 @@
         {:subject (str "😍 on " (:title site) " from " (:username fan))
          :to [(:email author)]
          :text (str "Check out the post at "
-                    (str (.. js/process -env -SYSTEM_BASE_URL) "/posts/" (:id post)))}))))
+                    (str (get-env "SYSTEM_BASE_URL") "/posts/" (:id post)))}))))
 
 (defn notify-comment-thread [{:keys [author body post]}]
   (.then
@@ -111,7 +112,7 @@
                             " wrote: \n\n"
                             body
                             "\n\nJoin the conversation at "
-                            (str (.. js/process -env -SYSTEM_BASE_URL) "/posts/" (:id post)))}))
+                            (str (get-env "SYSTEM_BASE_URL") "/posts/" (:id post)))}))
             participants))))))
 
 (defmulti message-handler
@@ -140,8 +141,10 @@
 (def -main
   (fn []
     (queue/consume
-      {:queue (.. js/process -env -SYSTEM_QUEUE_NAME)
-       :connection-string (.. js/process -env -RABBITMQ_BIGWIG_RX_URL)
+      {:queue (get-env "SYSTEM_QUEUE_NAME")
+       ;; TODO remove RabbitMQ specific information once migrated
+       :connection-string (get-env "SYSTEM_QUEUE_URL"
+                                   (get-env "RABBITMQ_BIGWIG_RX_URL"))
        :handler (fn [chan msg]
                   (when-not (nil? msg)
                     (-> (message-handler

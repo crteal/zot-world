@@ -10,7 +10,8 @@
             [zot-world.server.db :as db]
             [zot-world.server.middleware :as middleware]
             [zot-world.styles :as styles]
-            [zot-world.server.queue :as queue]))
+            [zot-world.server.queue :as queue]
+            [zot-world.server.utils :as utils :refer [get-env]]))
 
 (defonce bcrypt (nodejs/require "bcrypt"))
 (defonce express (nodejs/require "express"))
@@ -21,7 +22,7 @@
 (def *default-post-page-size* 5)
 
 (defn production? []
-  (= (.. js/process -env -NODE_ENV)
+  (= (get-env "NODE_ENV")
      "production"))
 
 (defonce serializers {:css {:headers {:Content-Type "text/css"}}
@@ -49,8 +50,10 @@
 (defn enqueue! [t data]
   (queue/enqueue
     {:data {:type t :data data}
-     :queue (.. js/process -env -SYSTEM_QUEUE_NAME)
-     :connection-string (.. js/process -env -RABBITMQ_BIGWIG_TX_URL)}))
+     :queue (get-env "SYSTEM_QUEUE_NAME")
+     ;; TODO remove RabbitMQ specific information once migrated
+     :connection-string (get-env "SYSTEM_QUEUE_URL"
+                                 (get-env "RABBITMQ_BIGWIG_TX_URL"))}))
 
 (defn site-page-renderer [f]
   (fn [req res]
@@ -112,7 +115,7 @@
             (db/query :sites
               {:limit 1
                :client client
-               :where {:slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)}})
+               :where {:slug (get-env "ZOT_WORLD_SINGLE_TENANT_SLUG")}})
             (fn [site]
               (.then
                 (db/site-years client (:id site))
@@ -139,7 +142,7 @@
             (db/query :sites
               {:limit 1
                :client client
-               :where {:slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)}})
+               :where {:slug (get-env "ZOT_WORLD_SINGLE_TENANT_SLUG")}})
             (fn [site]
               (.then
                 (db/posts-until {:client client
@@ -171,7 +174,7 @@
       #(db/query :sites
          {:limit 1
           :client %
-          :where {:slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)}}))
+          :where {:slug (get-env "ZOT_WORLD_SINGLE_TENANT_SLUG")}}))
     (fn [{:keys [title]}]
       (render!
         res
@@ -223,7 +226,7 @@
       #(db/query :sites
          {:limit 1
           :client %
-          :where {:slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)}}))
+          :where {:slug (get-env "ZOT_WORLD_SINGLE_TENANT_SLUG")}}))
     (fn [{:keys [id title]}]
       (render!
         res
@@ -253,7 +256,7 @@
       (.redirect res "/register")
       (.verify jwt
         beta-key
-        (.. js/process -env -BETA_KEY_SECRET)
+        (get-env "BETA_KEY_SECRET")
         (clj->js {:algorithms ["HS256"]})
         (fn [err token]
           (if (some? err)
@@ -292,9 +295,9 @@
           (enqueue! :post/upload post))))))
 
 (defn get-post-media [req res]
-  (-> (s3. #js {:accessKeyId (.. js/process -env -AWS_ACCESS_KEY)
-                :secretAccessKey (.. js/process -env -AWS_SECRET_ACCESS_KEY)})
-      (.getObject #js {:Bucket (.. js/process -env -AWS_S3_MEDIA_BUCKET)
+  (-> (s3. #js {:accessKeyId (get-env "AWS_ACCESS_KEY")
+                :secretAccessKey (get-env "AWS_SECRET_ACCESS_KEY")})
+      (.getObject #js {:Bucket (get-env "AWS_S3_MEDIA_BUCKET")
                        :Key (str (.. req -params -id) "/" (.. req -params -file))})
       .createReadStream
       (.on "error" (fn [err]
@@ -374,7 +377,7 @@
                             .toString))))
 
 (defn get-sluggable-route [route]
-  (if-some [slug (.. js/process -env -ZOT_WORLD_SINGLE_TENANT_SLUG)]
+  (if-some [slug (get-env "ZOT_WORLD_SINGLE_TENANT_SLUG")]
     route
     (str "/:slug" route)))
 
