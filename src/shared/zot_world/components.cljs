@@ -132,8 +132,7 @@
 (def register (om/factory Register))
 
 (defn emojify [s]
-  ;; TODO fixes an upstream bug with Max CDN; remove if possible
-  (.parse js/twemoji s #js {:base "//cdnjs.cloudflare.com/ajax/libs/twemoji/2.4.0/"}))
+  (.parse js/twemoji s))
 
 (defui Ago
   Object
