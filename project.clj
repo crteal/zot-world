@@ -12,7 +12,7 @@
                  [markdown-clj                "1.0.5"
                   :exclusions [org.clojure/clojure]]
                  [org.clojure/clojure         "1.9.0"]
-                 [org.clojure/clojurescript   "1.10.339"]
+                 [org.clojure/clojurescript   "1.10.439"]
                  [org.omcljs/om               "1.0.0-beta4"
                   :exclusions [cljsjs/react
                                cljsjs/react-dom
