@@ -5,7 +5,7 @@
   "private": true,
   "main": "target/server/main.js",
   "dependencies": {
-    "amqplib": "0.5.2",
+    "amqplib": "0.5.3",
     "aws-sdk": "2.378.0",
     "bcrypt": "2.0.1",
     "body-parser": "1.18.3",
