@@ -52,3 +52,8 @@
                  (:is_member site)
                  (= (.. req -session -userId)
                     (:owner_id site))))))))
+
+(defn cache-control [s]
+  (fn [req res nxt]
+    (.set res "Cache-Control" s)
+    (nxt)))

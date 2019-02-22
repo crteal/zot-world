@@ -388,7 +388,9 @@
           middleware/load-site!
           middleware/forbid-site-members
           index)
-    (.get "/css/styles.css" theme)
+    (.get "/css/styles.css"
+          (middleware/cache-control "public, max-age=31557600")
+          theme)
     (.get "/register"
           (middleware/csrf)
           register-page)
@@ -413,6 +415,7 @@
           middleware/restrict
           middleware/load-site!
           middleware/forbid-site-members
+          (middleware/cache-control "private, max-age=31557600")
           get-post-media)
     (.get (get-sluggable-route "/calendar")
           middleware/restrict
