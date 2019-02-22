@@ -19,7 +19,7 @@
 (defonce s3 (nodejs/require "aws-sdk/clients/s3"))
 (defonce twilio (nodejs/require "twilio"))
 
-(def *default-post-page-size* 5)
+(def ^:dynamic *default-post-page-size* 5)
 
 (defn production? []
   (= (get-env "NODE_ENV")
