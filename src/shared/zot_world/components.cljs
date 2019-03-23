@@ -247,6 +247,11 @@
 
 (def media (om/factory Media))
 
+(defn likes-emoji [likes {:keys [id] :as user}]
+  (if (empty? (filter #(= id (:id %)) likes))
+    "🙂"
+    "😍"))
+
 (defui Post
   static om/Ident
   (ident [this {:keys [id]}]
@@ -257,7 +262,8 @@
   Object
   (render [this]
     (let [{:keys [comments data likes id] :as props} (om/props this)
-          state (om/get-state this)]
+          state (om/get-state this)
+          {:keys [user] :as shared} (om/shared this)]
       (dom/article #js {:className "center-ns mw6-ns hidden mv4 mh3 ba b--near-white"
                         :name "post"}
         (media props)
@@ -271,7 +277,7 @@
                        :title (when-not (empty? likes)
                                 (str "Liked by: " (str/join ", " (map :username likes))))}
             (dom/button #js {:className "pa0 bw0 bg-transparent mid-gray"
-                             :dangerouslySetInnerHTML #js {:__html (emojify (str "😍 " (count likes)))}
+                             :dangerouslySetInnerHTML #js {:__html (emojify (str (likes-emoji likes user) " " (count likes)))}
                              :onClick (goog.functions.debounce
                                         #(om/transact!
                                            this

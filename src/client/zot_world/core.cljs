@@ -47,6 +47,7 @@
 (def reconciler
   (om/reconciler
     {:state app-state
+     :shared (select-keys app-state [:user])
      :merge (fn [reconciler state novelty query]
               {:keys (keys novelty)
                :next (merge-with (fn [l r]
