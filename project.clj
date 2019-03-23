@@ -2,9 +2,9 @@
   :min-lein-version "2.7.1"
 
   :dependencies [[cljsjs/moment               "2.24.0-0"]
-                 [cljsjs/react                "16.8.1-0"]
-                 [cljsjs/react-dom            "16.8.1-0"]
-                 [cljsjs/react-dom-server     "16.8.1-0"]
+                 [cljsjs/react                "16.8.3-0"]
+                 [cljsjs/react-dom            "16.8.3-0"]
+                 [cljsjs/react-dom-server     "16.8.3-0"]
                  [cljsjs/twemoji              "11.2.0-0"]
                  [com.birdduck/hom            "0.1.0-SNAPSHOT"]
                  [com.cognitect/transit-cljs  "0.8.256"]
