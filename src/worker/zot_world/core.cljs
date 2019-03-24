@@ -58,6 +58,15 @@
      :client client
      :where {:id id}}))
 
+(defn send-email! [email-type {:keys [to] :as config}]
+  (.then (db/users-by-emails to)
+         (fn [users]
+           (let [filtered (filter (fn [{:keys [settings]}]
+                                    (get-in settings [:email email-type]))
+                                  users)]
+             (when-not (empty? filtered)
+               (email/send (merge config {:to filtered})))))))
+
 (defn notify-applause [{:keys [fan post]}]
   (.then
     (db/tx
@@ -74,7 +83,7 @@
               (fn [[author fan]]
                 {:site site :author author :fan fan}))))))
     (fn [{:keys [site author fan]}]
-      (email/send
+      (send-email! :applause
         {:subject (str "😍 on " (:title site) " from " (:username fan))
          :to [(:email author)]
          :text (str "Check out the post at "
@@ -105,7 +114,7 @@
         (clj->js
           (map
             (fn [participant]
-              (email/send
+              (send-email! :conversation
                 {:subject (str "💬 on " (:title site))
                  :to [(:email participant)]
                  :text (str (:username author)

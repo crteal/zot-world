@@ -189,12 +189,31 @@
                  .-sql
                  (.in "id" (clj->js ids)))})))
 
+(defn user-by-id [id]
+  (query
+    :users
+    {:limit 1
+     :where {:id id
+             :is_deleted false}}))
+
 (defn user-by-email [email]
   (query
     :users
     {:limit 1
      :where {:email email
              :is_deleted false}}))
+
+(defn users-by-emails
+  ([emails] (users-by-emails nil emails))
+  ([client emails]
+   (query
+     :users
+     {:client client
+      :where (.and (.-sql sql)
+                   (-> sql
+                       .-sql
+                       (.in "email" (clj->js emails)))
+                   #js {:is_deleted false})})))
 
 (defn user-by-email-password [email password cb]
   (-> (user-by-email email)
