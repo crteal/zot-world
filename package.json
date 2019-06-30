@@ -22,7 +22,7 @@
     "request": "2.88.0",
     "source-map-support": "0.5.12",
     "twilio": "3.33.0",
-    "ws": "6.2.0"
+    "ws": "7.0.1"
   },
   "engines": {
     "node": "12.4.0"
