@@ -59,6 +59,7 @@
      :where {:id id}}))
 
 (defn send-email! [email-type {:keys [to] :as config}]
+  (println "send-email!" email-type to)
   (.then (db/users-by-emails to)
          (fn [users]
            (let [filtered (filter (fn [{:keys [settings]}]
