@@ -65,6 +65,7 @@
            (let [filtered (filter (fn [{:keys [settings]}]
                                     (get-in settings [:email email-type]))
                                   users)]
+             (println filtered)
              (when-not (empty? filtered)
                (email/send (merge config {:to filtered})))))))
 
