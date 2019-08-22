@@ -65,9 +65,9 @@
            (let [filtered (filter (fn [{:keys [settings]}]
                                     (get-in settings [:email email-type]))
                                   users)]
-             (println filtered)
+             (println "filtered" filtered)
              (when-not (empty? filtered)
-               (email/send (merge config {:to filtered})))))))
+               (email/send (merge config {:to (map :email filtered)})))))))
 
 (defn notify-applause [{:keys [fan post]}]
   (.then
