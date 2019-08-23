@@ -22,7 +22,7 @@
                {:ToAddresses
                 (if-some [override (.. js/process -env -SYSTEM_EMAIL_ADDRESS_RECIPIENT_OVERRIDE)]
                   [override]
-                  to)}
+                  (clj->js to))}
                :Message
                {:Subject {:Charset "UTF-8"
                           :Data subject}
