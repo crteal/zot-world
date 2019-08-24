@@ -8,7 +8,9 @@
 (defn send [{:keys [from html subject text to]
              :or {from (.. js/process -env -SYSTEM_EMAIL_ADDRESS)}
              :as options}]
+  (println "from" from)
   (println "send-options" options)
+  (println "to" (clj->js to))
   (js/Promise.
     (fn [res rej]
       (-> (ses. #js {:accessKeyId (.. js/process -env -AWS_ACCESS_KEY)
