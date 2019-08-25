@@ -8,23 +8,24 @@
 (defn send [{:keys [from html subject text to]
              :or {from (.. js/process -env -SYSTEM_EMAIL_ADDRESS)}
              :as options}]
-  (println "from" from)
-  (println "send-options" options)
-  (println "to" (clj->js to))
-  (js/Promise.
-    (fn [res rej]
-      (-> (ses. #js {:accessKeyId (.. js/process -env -AWS_ACCESS_KEY)
-                     :secretAccessKey (.. js/process -env -AWS_SECRET_ACCESS_KEY)
-                     :region (.. js/process -env -AWS_REGION)})
+  (let [region (.. js/process -env -AWS_REGION)
+        access-key-id (.. js/process -env -AWS_ACCESS_KEY)
+        secret-access-key (.. js/process -env -AWS_SECRET_ACCESS_KEY)
+        override (.. js/process -env -SYSTEM_EMAIL_ADDRESS_RECIPIENT_OVERRIDE)]
+    (js/Promise.
+      (fn [res rej]
+        (-> (ses. #js {:accessKeyId access-key-id
+                       :secretAccessKey secret-access-key
+                       :region region})
           (.sendEmail
             (clj->js
               {:ReturnPath from
                :Source from
                :Destination
                {:ToAddresses
-                (if-some [override (.. js/process -env -SYSTEM_EMAIL_ADDRESS_RECIPIENT_OVERRIDE)]
-                  [override]
-                  (clj->js to))}
+                (if (str/blank? override)
+                  (clj->js to)
+                  override)}
                :Message
                {:Subject {:Charset "UTF-8"
                           :Data subject}
@@ -41,4 +42,4 @@
             (fn [err data]
               (if (some? err)
                 (rej err)
-                (res data))))))))
+                (res data)))))))))

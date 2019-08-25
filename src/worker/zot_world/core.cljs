@@ -59,13 +59,11 @@
      :where {:id id}}))
 
 (defn send-email! [email-type {:keys [to] :as config}]
-  (println "send-email!" email-type to)
   (.then (db/users-by-emails to)
          (fn [users]
            (let [filtered (filter (fn [{:keys [settings]}]
                                     (get-in settings [:email email-type]))
                                   users)]
-             (println "filtered" filtered)
              (when-not (empty? filtered)
                (email/send (merge config {:to (map :email filtered)})))))))
 
