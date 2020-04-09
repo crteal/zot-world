@@ -11,6 +11,7 @@
 (defonce helmet (nodejs/require "helmet"))
 (defonce http (nodejs/require "http"))
 (defonce morgan (nodejs/require "morgan"))
+(defonce redis (nodejs/require "redis"))
 (defonce session (nodejs/require "express-session"))
 (defonce RedisStore (connect-redis session))
 
@@ -24,6 +25,11 @@
     (or (some? (re-find #"application/edn" content-type))
         (.filter compression req res))
     (.filter compression req res)))
+
+(defonce redis-client
+  (doto (.createClient redis #js {:url (.-REDIS_URL (.-env js/process))})
+    (.unref)
+    (.on "error" js/console.error)))
 
 ;; app gets redefined on reload
 (def app (-> (express)
@@ -39,7 +45,7 @@
                                :resave false
                                :rolling true
                                :saveUninitialized false
-                               :store (RedisStore. #js {:url (.-REDIS_URL (.-env js/process))})
+                               :store (RedisStore. #js {:client redis-client})
                                :secret (.-COOKIE_SECRET (.-env js/process))})))))
 
 ;; routes get redefined on each reload
