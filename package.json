@@ -26,7 +26,7 @@
     "ws": "7.2.3"
   },
   "engines": {
-    "node": "12.9.0"
+    "node": "13.12.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
