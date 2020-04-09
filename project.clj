@@ -19,7 +19,7 @@
                                com.cognitect/transit-cljs]]]
 
   :plugins [[lein-figwheel "0.5.19"]
-            [lein-cljsbuild "1.1.7" :exclusions [[org.clojure/clojure]]]]
+            [lein-cljsbuild "1.1.8" :exclusions [[org.clojure/clojure]]]]
 
   :source-paths ["src"]
 
