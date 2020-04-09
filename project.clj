@@ -11,7 +11,7 @@
                  [garden                      "1.3.9"]
                  [markdown-clj                "1.10.2"
                   :exclusions [org.clojure/clojure]]
-                 [org.clojure/clojure         "1.10.0"]
+                 [org.clojure/clojure         "1.10.1"]
                  [org.clojure/clojurescript   "1.10.520"]
                  [org.omcljs/om               "1.0.0-beta4"
                   :exclusions [cljsjs/react
