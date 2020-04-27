@@ -57,7 +57,7 @@
     :dev {
       :dependencies [[binaryage/devtools "0.9.10"]
                      [figwheel-sidecar "0.5.19"]
-                     [cider/piggieback "0.4.1"]]
+                     [cider/piggieback "0.4.2"]]
       :source-paths ["src" "dev"]
       :repl-options {:nrepl-middleware [cider.piggieback/wrap-cljs-repl]}
       :clean-targets ^{:protect false} ["resources/js/out"
