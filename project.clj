@@ -18,7 +18,7 @@
                                cljsjs/react-dom
                                com.cognitect/transit-cljs]]]
 
-  :plugins [[lein-figwheel "0.5.19"]
+  :plugins [[lein-figwheel "0.5.20"]
             [lein-cljsbuild "1.1.8" :exclusions [[org.clojure/clojure]]]]
 
   :source-paths ["src"]
@@ -56,7 +56,7 @@
   :profiles {
     :dev {
       :dependencies [[binaryage/devtools "1.0.0"]
-                     [figwheel-sidecar "0.5.19"]
+                     [figwheel-sidecar "0.5.20"]
                      [cider/piggieback "0.4.2"]]
       :source-paths ["src" "dev"]
       :repl-options {:nrepl-middleware [cider.piggieback/wrap-cljs-repl]}
