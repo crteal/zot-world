@@ -22,7 +22,7 @@
     "request": "2.88.2",
     "redis": "3.0.2",
     "source-map-support": "0.5.19",
-    "twilio": "3.46.0",
+    "twilio": "3.47.0",
     "ws": "7.3.0"
   },
   "engines": {
