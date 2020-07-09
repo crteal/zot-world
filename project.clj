@@ -9,7 +9,7 @@
                  [com.birdduck/hom            "0.1.0-SNAPSHOT"]
                  [com.cognitect/transit-cljs  "0.8.264"]
                  [garden                      "1.3.10"]
-                 [markdown-clj                "1.10.4"
+                 [markdown-clj                "1.10.5"
                   :exclusions [org.clojure/clojure]]
                  [org.clojure/clojure         "1.10.1"]
                  [org.clojure/clojurescript   "1.10.520"]
