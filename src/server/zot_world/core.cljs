@@ -34,7 +34,7 @@
 ;; app gets redefined on reload
 (def app (-> (express)
              (.use (compression #js {:filter compression-filter}))
-             (.use (helmet))
+             (.use (helmet #js {:contentSecurityPolicy false}))
              (.use (morgan (if production?
                              "combined"
                              "dev")))
