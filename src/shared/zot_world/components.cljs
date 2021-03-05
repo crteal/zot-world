@@ -453,19 +453,14 @@
               (dom/meta #js {:name "theme-color"
                              :content "#ffffff"})
               (dom/title nil title)
-              (dom/link #js {:href "/apple-touch-icon.png"
-                             :rel "apple-touch-icon"
-                             :sizes "180x180"})
               (dom/link #js {:href "/favicon-32x32.png"
                              :rel "icon"
                              :sizes "32x32"
                              :type "image/png"})
-              (dom/link #js {:href "/favicon-16x16.png"
-                             :rel "icon"
-                             :sizes "16x16"
-                             :type "image/png"})
               (dom/link #js {:href "/manifest.json"
                              :rel "manifest"})
+              (dom/script #js {:src "https://cdn.jsdelivr.net/npm/pwacompat"
+                               :crossorigin "anonymous"})
               (dom/link #js {:href "/css/tachyons.min.css"
                              :rel "stylesheet"})
               head)
