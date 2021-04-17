@@ -54,6 +54,7 @@
 
 (def -main
   (fn []
+    (.on js/process "unhandledRejection" #(js/console.error %))
     ;; This is the secret sauce. you want to capture a reference to
     ;; the app function (don't use it directly) this allows it to be redefined on each reload
     ;; this allows you to change routes and have them hot loaded as you
