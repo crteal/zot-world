@@ -20,7 +20,7 @@
     "morgan": "1.10.0",
     "pg-bricks": "0.6.0",
     "request": "2.88.2",
-    "redis": "3.0.2",
+    "redis": "3.1.2",
     "source-map-support": "0.5.19",
     "twilio": "3.57.0",
     "ws": "7.4.3"
