@@ -7,7 +7,7 @@
                  [cljsjs/react-dom-server     "16.13.1-0"]
                  [cljsjs/twemoji              "12.1.5-0"]
                  [com.birdduck/hom            "0.1.0-SNAPSHOT"]
-                 [com.cognitect/transit-cljs  "0.8.264"]
+                 [com.cognitect/transit-cljs  "0.8.269"]
                  [garden                      "1.3.10"]
                  [markdown-clj                "1.10.5"
                   :exclusions [org.clojure/clojure]]
