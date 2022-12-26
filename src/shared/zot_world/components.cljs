@@ -460,7 +460,7 @@
               (dom/link #js {:href "/manifest.json"
                              :rel "manifest"})
               (dom/script #js {:src "https://cdn.jsdelivr.net/npm/pwacompat"
-                               :crossorigin "anonymous"})
+                               :crossOrigin "anonymous"})
               (dom/link #js {:href "/css/tachyons.min.css"
                              :rel "stylesheet"})
               head)
