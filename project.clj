@@ -1,7 +1,7 @@
 (defproject zot-world "0.1.0-SNAPSHOT"
   :min-lein-version "2.7.1"
 
-  :dependencies [[cljsjs/moment               "2.24.0-0"]
+  :dependencies [[cljsjs/moment               "2.29.4-0"]
                  [cljsjs/react                "16.13.1-0"]
                  [cljsjs/react-dom            "16.13.1-0"]
                  [cljsjs/react-dom-server     "16.13.1-0"]
