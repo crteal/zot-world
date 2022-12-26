@@ -72,10 +72,12 @@
     (fn [res rej]
       (-> (or client sql)
           (.raw (str-sql
-                       "SELECT DISTINCT"
-                         "date_part('year', created_at) AS year"
-                       "FROM posts_view"
-                       "WHERE site_id = $1")
+                       "SELECT * FROM ("
+                         "SELECT DISTINCT"
+                           "date_part('year', created_at) AS year"
+                         "FROM posts_view"
+                         "WHERE site_id = $1"
+                       ") AS years ORDER BY years.year DESC")
                   #js [site-id])
             (.rows
               (fn [err rows]
