@@ -5,7 +5,7 @@
                  [cljsjs/react                "16.13.1-0"]
                  [cljsjs/react-dom            "16.13.1-0"]
                  [cljsjs/react-dom-server     "16.13.1-0"]
-                 [cljsjs/twemoji              "12.1.5-0"]
+                 [cljsjs/twemoji              "14.0.1-0"]
                  [com.birdduck/hom            "0.1.0-SNAPSHOT"]
                  [com.cognitect/transit-cljs  "0.8.269"]
                  [garden                      "1.3.10"]
