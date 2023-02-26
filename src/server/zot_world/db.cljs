@@ -4,7 +4,8 @@
 
 (defonce bcrypt (nodejs/require "bcrypt"))
 (defonce sql (.configure (nodejs/require "pg-bricks")
-                         #js {:connectionString (.. js/process -env -DATABASE_URL)
+                         #js {:connectionString (or (.. js/process -env -DATABASE_URL_TEMP)
+                                                    (.. js/process -env -DATABASE_URL))
                               :ssl #js {:rejectUnauthorized false}}))
 
 (defn to-json [obj]
