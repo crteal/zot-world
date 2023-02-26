@@ -5,7 +5,6 @@
             [hom.core :refer-macros [component]]
             [goog.events :as gevents]
             [goog.functions]
-            [goog.object :as gobj]
             [markdown.core :as md]
             [markdown.common :as mdc]
             [om.next :as om :refer-macros [defui ui]]
@@ -20,18 +19,6 @@
                                           mdc/italics
                                           mdc/strikethrough
                                           mdc/inline-code]))
-
-(def supports-webp?
-  (memoize
-    (fn []
-      (let [canvas (doto (.createElement js/document "canvas")
-                     (gobj/set "width" 1)
-                     (gobj/set "height" 1))
-            ctx (.getContext canvas "2d")]
-        (= (-> canvas
-               (.toDataURL "image/webp")
-               (.indexOf "data:image/webp"))
-           0)))))
 
 (defmulti make-field
   (fn [config]
@@ -210,24 +197,14 @@
 (defmethod make-media "video/mpeg" [options]
   (make-video options))
 
-; TODO temporary fallback to Twilio, server should handle this
-(defn make-image-error-handler [{:keys [id component post-id url]}]
-  (fn [_]
-    (doto (om/react-ref component (str post-id "." id))
-      (gobj/set "src" url))))
-
-(defmethod make-media :default [{:keys [id content-type post-id url] :as opts}]
-  (dom/img
-    (clj->js
-      (merge
-        {:key id
-         :className "db mv0 w-100"
-         :src url}
-        (when (and (= content-type "image/jpeg")
-                   (supports-webp?))
-          {:onError (make-image-error-handler opts)
-           :ref (str post-id "." id)
-           :src (str "/posts/" post-id "/" id ".webp")})))))
+(defmethod make-media :default [{:keys [id post-id url]}]
+  (let [file-path (str "/posts/" post-id "/" id)]
+    (dom/picture #js {:key id}
+      (dom/source #js {:srcset (str file-path ".webp") :type "image/webp"})
+      (dom/img #js {:className "db mv0 w-100"
+                    :src url
+                    :loading "lazy"
+                    :decoding "async"}))))
 
 (defui Media
   Object
