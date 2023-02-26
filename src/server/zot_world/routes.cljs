@@ -299,6 +299,13 @@
                 :secretAccessKey (get-env "AWS_SECRET_ACCESS_KEY")})
       (.getObject #js {:Bucket (get-env "AWS_S3_MEDIA_BUCKET")
                        :Key (str (.. req -params -id) "/" (.. req -params -file))})
+      (.on "httpHeaders" (fn [status-code headers]
+                           (when (< status-code 300)
+                             (doto res
+                               (.set "Content-Length" (gobj/get headers "content-length"))
+                               (.set "Content-Type" (gobj/get headers "content-type"))
+                               (.set "ETag" (gobj/get headers "etag"))
+                               (.set "Last-Modified" (gobj/get headers "last-modified"))))))
       .createReadStream
       (.on "error" (fn [err]
                      (condp = (.-code err)
