@@ -3,10 +3,12 @@
             [cljs.reader :as reader]
             [clojure.string :as str]
             [goog.object :as gobj]
-            [zot-world.server.db :as db]))
+            [zot-world.server.db :as db]
+            [zot-world.server.utils :as utils :refer [get-env]]))
 
 (defonce body-parser (nodejs/require "body-parser"))
 (defonce csrf-package (nodejs/require "csurf"))
+(defonce jwt (nodejs/require "jsonwebtoken"))
 (defonce twilio-package (nodejs/require "twilio"))
 
 (defn csrf []
@@ -23,10 +25,23 @@
                                 :validate validate?}))
 
 (defn restrict [req res nxt]
-  (if (and (some? (.-session req))
-           (some? (.-userId (.-session req))))
-    (nxt)
-    (.redirect res (str "/login?url=" (.-originalUrl req)))))
+  (if-some [auth-header (.get req "X-ZOT-WORLD-AUTH")]
+      (.verify jwt
+        auth-header
+        (get-env "AUTH_KEY_SECRET")
+        (clj->js {:algorithms ["HS256"]})
+        (fn [err token]
+          (if (some? err)
+            (.sendStatus res 403)
+            (do
+              (gobj/set (.-session req)
+                        "userId"
+                        (gobj/get token "userId"))
+              (nxt)))))
+      (if (and (some? (.-session req))
+               (some? (.-userId (.-session req))))
+        (nxt)
+        (.redirect res (str "/login?url=" (.-originalUrl req))))))
 
 (defn load-site! [req res nxt]
   (let [slug (or (.. req -params -slug)
