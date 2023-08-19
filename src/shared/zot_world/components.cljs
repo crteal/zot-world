@@ -198,25 +198,34 @@
 (defmethod make-media "video/mpeg" [options]
   (make-video options))
 
+(defn image-path
+  ([post-id id] (image-path post-id id nil))
+  ([post-id id extension]
+   (cond-> (str "/posts/" post-id "/" id)
+     extension (str extension))))
+
 (defn make-image-error-handler
   [{:keys [component id post-id url]}]
-  (fn [_]
-    (println "failed to load image" id "for" post-id "; falling back to" url)
-    (let [node (om/react-ref component (str post-id "." id))
-          children (gobj/get node "children")]
-      (doseq [i (range (dec (gobj/get children "length")))
-              :when (>= i 0)]
-        (gobj/set (aget children i) "srcset" url)))))
+  (fn [e]
+    (let [fallback-url (if (str/includes? (gobj/get (gobj/get e "target") "currentSrc") ".avif")
+                         (image-path post-id id ".webp")
+                         url)]
+      (println "failed to load image" id "for" post-id "; falling back to" fallback-url)
+      (let [node (om/react-ref component (str post-id "." id))
+            children (gobj/get node "children")]
+        (doseq [i (range (dec (gobj/get children "length")))
+                :when (>= i 0)]
+          (gobj/set (aget children i) "srcset" fallback-url))))))
 
 (defmethod make-media :default [{:keys [id post-id url] :as opts}]
-  (let [file-path (str "/posts/" post-id "/" id)]
-    (dom/picture #js {:key id :ref (str post-id "." id)}
-      (dom/source #js {:srcset (str file-path ".webp") :type "image/webp"})
-      (dom/img #js {:className "db mv0 w-100"
-                    :src url
-                    :loading "lazy"
-                    :decoding "async"
-                    :onError (make-image-error-handler opts)}))))
+  (dom/picture #js {:key id :ref (str post-id "." id)}
+    (dom/source #js {:srcset (image-path post-id id ".avif") :type "image/avif"})
+    (dom/source #js {:srcset (image-path post-id id ".webp") :type "image/webp"})
+    (dom/img #js {:className "db mv0 w-100"
+                  :src url
+                  :loading "lazy"
+                  :decoding "async"
+                  :onError (make-image-error-handler opts)})))
 
 (defui Media
   Object
