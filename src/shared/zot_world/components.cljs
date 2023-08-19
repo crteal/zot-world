@@ -5,6 +5,7 @@
             [hom.core :refer-macros [component]]
             [goog.events :as gevents]
             [goog.functions]
+            [goog.object :as gobj]
             [markdown.core :as md]
             [markdown.common :as mdc]
             [om.next :as om :refer-macros [defui ui]]
@@ -197,14 +198,24 @@
 (defmethod make-media "video/mpeg" [options]
   (make-video options))
 
-(defmethod make-media :default [{:keys [id post-id url]}]
+(defn make-image-error-handler
+  [{:keys [component id post-id url]}]
+  (fn [_]
+    (let [node (om/react-ref component (str post-id "." id))
+          children (gobj/get node "children")]
+      (doseq [i (range (dec (gobj/get children "length")))
+              :when (>= i 0)]
+        (gobj/set (aget children i) "srcset" url)))))
+
+(defmethod make-media :default [{:keys [id post-id url] :as opts}]
   (let [file-path (str "/posts/" post-id "/" id)]
-    (dom/picture #js {:key id}
+    (dom/picture #js {:key id :ref (str post-id "." id)}
       (dom/source #js {:srcset (str file-path ".webp") :type "image/webp"})
       (dom/img #js {:className "db mv0 w-100"
                     :src url
                     :loading "lazy"
-                    :decoding "async"}))))
+                    :decoding "async"
+                    :onError (make-image-error-handler opts)}))))
 
 (defui Media
   Object
