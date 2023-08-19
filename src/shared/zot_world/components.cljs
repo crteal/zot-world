@@ -201,6 +201,7 @@
 (defn make-image-error-handler
   [{:keys [component id post-id url]}]
   (fn [_]
+    (println "failed to load image" id "for" post-id "; falling back to" url)
     (let [node (om/react-ref component (str post-id "." id))
           children (gobj/get node "children")]
       (doseq [i (range (dec (gobj/get children "length")))
