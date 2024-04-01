@@ -120,7 +120,7 @@
 (def register (om/factory Register))
 
 (defn emojify [s]
-  (.parse js/twemoji s))
+  (.parse js/twemoji s #js {:base "images/twemoji/"}))
 
 (defui Ago
   Object
