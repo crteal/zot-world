@@ -26,8 +26,13 @@
         (.filter compression req res))
     (.filter compression req res)))
 
+
 (defonce redis-client
-  (doto (.createClient redis #js {:url (.-REDIS_URL (.-env js/process))})
+  (doto (.createClient redis
+          (clj->js (merge {:url (.-REDIS_URL (.-env js/process))}
+                          (when production?
+                            {:tls
+                             {:rejectUnauthorized false}}))))
     (.unref)
     (.on "error" js/console.error)))
 
