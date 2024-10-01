@@ -23,7 +23,7 @@
     "request": "2.88.2",
     "source-map-support": "0.5.21",
     "twilio": "3.84.0",
-    "ws": "7.4.6"
+    "ws": "7.5.10"
   },
   "overrides": {
     "pg": "8.8.0"
